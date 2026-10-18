@@ -1,0 +1,57 @@
+{
+  "center": {
+    "lat": 35.4652,
+    "lon": -114.9195
+  },
+  "regions": {
+    "inner": {
+      "size": 22000,
+      "heightRes": 2048,
+      "heightZoom": 14,
+      "imageRes": 4096,
+      "imageZoom": 15
+    },
+    "mid": {
+      "size": 50000,
+      "heightRes": 1024,
+      "heightZoom": 12,
+      "imageRes": 2048,
+      "imageZoom": 13
+    },
+    "far": {
+      "size": 400000,
+      "heightRes": 1024,
+      "heightZoom": 9,
+      "imageRes": 2048,
+      "imageZoom": 10
+    }
+  },
+  "heightEncoding": {
+    "inner": {
+      "offset": 0,
+      "scale": 24
+    },
+    "mid": {
+      "offset": 0,
+      "scale": 24
+    },
+    "far": {
+      "offset": 100,
+      "scale": 16
+    }
+  },
+  "heightRanges": {
+    "inner": {
+      "min": 656.6621002294472,
+      "max": 1454.9842137341766
+    },
+    "mid": {
+      "min": 195.19517873675105,
+      "max": 2139.907578870744
+    },
+    "far": {
+      "min": -95,
+      "max": 3564.1640191799625
+    }
+  }
+}
