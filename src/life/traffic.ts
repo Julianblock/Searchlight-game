@@ -183,7 +183,7 @@ export class Traffic {
   private t0: Float32Array[] = [];
   private buckets = new Map<number, Car[]>();
 
-  constructor(osm: OsmData, private hf: Heightfield, radius = 23000) {
+  constructor(osm: OsmData, private hf: Heightfield, radius = 48000) {
     this.material = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       vertexShader: propVertex,
@@ -303,7 +303,8 @@ export class Traffic {
   private spawn() {
     let seed = 1;
     this.edges.forEach((e, id) => {
-      const want = (e.len / 1000) * ROAD[e.kind].density;
+      // Casino Drive crawls with cruisers, shuttles and valet traffic day and night.
+      const want = (e.len / 1000) * ROAD[e.kind].density * (e.name === 'South Casino Drive' ? 14 : 1);
       let n = Math.floor(want) + (hash(id) < want % 1 ? 1 : 0);
       while (n-- > 0) {
         const h = hash(seed++);
