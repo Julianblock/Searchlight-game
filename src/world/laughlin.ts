@@ -378,7 +378,10 @@ export class Laughlin {
     for (const [x, z, w, d, fl] of towers) {
       const top = this.slab(fr, x, z, w, d, fl, '#a86a3e', FX.GLASS, 0.5);
       // White fins at the ends and a white crown.
-      for (const e of [-1, 1]) this.box(fr, x + e * (w / 2 + 0.6), -2, z, 2.4, top + 3, d + 1.2, '#f0ece4', { rough: 0.6 });
+      for (const e of [-1, 1]) {
+        this.box(fr, x + e * (w / 2 + 0.6), -2, z, 2.4, top + 3, d + 1.2, '#f0ece4', { rough: 0.6 });
+        this.box(fr, x + e * (w / 2 + 1.9), 12, z, 0.3, top - 12, 4.2, '#a86a3e', { rough: 0.3, fx: FX.WINDOWS, glow: 0.4 });
+      }
       this.box(fr, x, top, z, w + 2, 2.4, d + 1.2, '#f0ece4');
       // Blue LED strips up the corners.
       for (const e of [-1, 1]) for (const f of [-1, 1]) this.tube(fr, new THREE.Vector3(x + e * (w / 2 + 1.9), 10, z + f * (d / 2 + 0.7)), new THREE.Vector3(x + e * (w / 2 + 1.9), top + 2, z + f * (d / 2 + 0.7)), 0.3, '#3aa8ff', 2.2);
