@@ -3,13 +3,18 @@ import path from 'node:path';
 import { latLonToLocal, regionBounds } from './geo.mjs';
 
 const UA = 'searchlight-game/0.1 (github.com/Julianblock/Searchlight-game)';
-const ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
 
 async function overpass(query, cacheFile) {
   try {
     return JSON.parse(await fs.readFile(cacheFile, 'utf8'));
   } catch {}
-  for (const url of ENDPOINTS) {
+  for (let round = 0; round < 4; round++) for (const url of ENDPOINTS) {
+    if (round) await new Promise((r) => setTimeout(r, 5000 * round));
     try {
       const res = await fetch(url, {
         method: 'POST',
