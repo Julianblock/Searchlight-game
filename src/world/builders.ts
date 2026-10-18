@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { SignRect } from './signAtlas';
 
 export const UP = new THREE.Vector3(0, 1, 0);
-export const FX = { NONE: 0, NEON: 1, CHASE: 2, METAL: 3 } as const;
+export const FX = { NONE: 0, NEON: 1, CHASE: 2, METAL: 3, WINDOWS: 4, GLASS: 5, BALCONY: 6, WASH: 7 } as const;
 
 export interface Mat {
   rough?: number;
