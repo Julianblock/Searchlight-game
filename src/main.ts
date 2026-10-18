@@ -33,6 +33,7 @@ import { Roads } from './world/roads';
 import { RoadIndex } from './world/roadIndex';
 import { Water } from './world/water';
 import { Cemeteries, planCemeteries } from './world/cemetery';
+import { Fences } from './world/fences';
 import { WaterSurface } from './render/waterSurface';
 import { createBirdShadowMaterial } from './birds/birdShader';
 import { loadSettings, type GameSettings } from './ui/settings';
@@ -99,6 +100,8 @@ async function boot() {
   engine.scene.add(roads.group);
   const cemeteries = new Cemeteries(cemeteryPlans, heightfield);
   engine.scene.add(cemeteries.group);
+  const fences = new Fences(world.osm, heightfield, roadIndex);
+  engine.scene.add(fences.group);
   const power = new PowerLines(world.osm, heightfield);
   const landmarks = new Landmarks(world.osm, heightfield);
   const props = new Props(world.osm, heightfield, power.pylons, (x, z) => landmarks.occupies(x, z));
@@ -215,6 +218,7 @@ async function boot() {
     trees.update(cam);
     grass.update(cam.position, seasonMonth());
     props.update(cam.position, free ? cam.position : player.object.position);
+    fences.update(cam, heightfield.height(cam.position.x, cam.position.z), window.innerHeight * engine.pixelRatio);
     lights.resize(cam, window.innerHeight * engine.pixelRatio);
     power.resize(cam, window.innerHeight * engine.pixelRatio);
     traffic.lights.resize(cam, window.innerHeight * engine.pixelRatio);
@@ -258,6 +262,7 @@ async function boot() {
     ghosts,
     roads,
     cemeteries,
+    fences,
     cemeteryPlans,
     roadIndex,
     G,
