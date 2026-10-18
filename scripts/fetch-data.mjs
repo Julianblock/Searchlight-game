@@ -1,12 +1,15 @@
 // Builds the real-world datasets the game streams at runtime.
 //   node scripts/fetch-data.mjs [step...]
-// Steps: height, imagery (default: all)
+// Steps: height, imagery, landcover (default: all)
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 import { CENTER } from './lib/geo.mjs';
 import { buildMosaic } from './lib/tiles.mjs';
+import { buildLandcover, LC } from './lib/landcover.mjs';
+import { readHeight } from './lib/derived.mjs';
+import { flowAccumulation } from './lib/washes.mjs';
 
 const OUT = path.resolve('public/data');
 export const REGIONS = {
@@ -88,6 +91,80 @@ async function writeMeta(extra = {}) {
   await fs.writeFile(file, JSON.stringify(meta, null, 2));
 }
 
+/** Bilinear terrain height from the baked inner and mid heightmaps. */
+async function terrainSampler() {
+  const grids = [];
+  for (const name of ['inner', 'mid']) {
+    const { h, N } = await readHeight(path.join(OUT, `height_${name}.png`), HEIGHT_ENCODING[name]);
+    grids.push({ h, N, size: REGIONS[name].size });
+  }
+  return (x, z) => {
+    for (const g of grids) {
+      const fx = (x / g.size + 0.5) * g.N - 0.5;
+      const fz = (z / g.size + 0.5) * g.N - 0.5;
+      if (fx < 0 || fz < 0 || fx > g.N - 2 || fz > g.N - 2) continue;
+      const x0 = Math.floor(fx);
+      const z0 = Math.floor(fz);
+      const tx = fx - x0;
+      const tz = fz - z0;
+      const i = z0 * g.N + x0;
+      const a = g.h[i] + (g.h[i + 1] - g.h[i]) * tx;
+      const b = g.h[i + g.N] + (g.h[i + g.N + 1] - g.h[i + g.N]) * tx;
+      return a + (b - a) * tz;
+    }
+    const g = grids[grids.length - 1];
+    const i = Math.min(g.N - 1, Math.max(0, Math.round((x / g.size + 0.5) * g.N)));
+    const j = Math.min(g.N - 1, Math.max(0, Math.round((z / g.size + 0.5) * g.N)));
+    return g.h[j * g.N + i];
+  };
+}
+
+// Washes drain at least this much country (m²); the big ones widen out.
+const WASH_AREA = 0.6e6;
+const WIDE_WASH_AREA = 6e6;
+const BIG_WASH_AREA = 25e6;
+
+/** Paints sandy washes over the scrub classes wherever enough desert drains through. */
+function markWashes(classes, res, size, height) {
+  const cell = size / res;
+  const h = new Float32Array(res * res);
+  for (let j = 0; j < res; j++) {
+    for (let i = 0; i < res; i++) {
+      // Sub-metre jitter breaks the smooth DEM's flats so flow meanders like real braids.
+      const n = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453;
+      h[j * res + i] = height(-size / 2 + (i + 0.5) * cell, -size / 2 + (j + 0.5) * cell) + (n - Math.floor(n)) * 0.6;
+    }
+  }
+  const acc = flowAccumulation(h, res, cell);
+  // Real washes are cut into the fans: keep channels that sit below their surroundings.
+  const R = 3;
+  const sunk = new Float32Array(res * res);
+  for (let j = R; j < res - R; j++) {
+    for (let i = R; i < res - R; i++) {
+      let sum = 0;
+      for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) sum += h[(j + dz) * res + i + dx];
+      sunk[j * res + i] = sum / (2 * R + 1) ** 2 - h[j * res + i];
+    }
+  }
+  const scrub = new Set([LC.CREOSOTE, LC.JOSHUA, LC.BLACKBRUSH, LC.GRASS, LC.OTHER]);
+  const wash = new Uint8Array(res * res);
+  for (let p = 0; p < res * res; p++) {
+    if (acc[p] < WASH_AREA || (acc[p] < BIG_WASH_AREA && sunk[p] < 0.4)) continue;
+    wash[p] = 1;
+    if (acc[p] < WIDE_WASH_AREA) continue;
+    const r = acc[p] > WIDE_WASH_AREA * 8 ? 2 : 1;
+    const x = p % res;
+    const z = (p / res) | 0;
+    for (let dz = -r; dz <= r; dz++) {
+      for (let dx = -r; dx <= r; dx++) {
+        const q = (z + dz) * res + x + dx;
+        if (q >= 0 && q < res * res) wash[q] = 1;
+      }
+    }
+  }
+  for (let p = 0; p < res * res; p++) if (wash[p] && scrub.has(classes[p])) classes[p] = LC.WASH;
+}
+
 const steps = {
   async height() {
     const ranges = {};
@@ -96,6 +173,24 @@ const steps = {
   },
   async imagery() {
     for (const name of Object.keys(REGIONS)) await buildImagery(name);
+  },
+  async landcover() {
+    const { size } = REGIONS.mid;
+    const res = 2048;
+    console.log('landcover/mid');
+    const height = await terrainSampler();
+    const classes = await buildLandcover(size, res, path.resolve('.cache/cdl'), height);
+    markWashes(classes, res, size, height);
+    const counts = {};
+    for (const v of classes) counts[v] = (counts[v] || 0) + 1;
+    const names = Object.fromEntries(Object.entries(LC).map(([k, v]) => [v, k]));
+    for (const [k, n] of Object.entries(counts).sort((a, b) => b[1] - a[1])) {
+      console.log(`  ${names[k].padEnd(12)} ${((100 * n) / classes.length).toFixed(1)}%`);
+    }
+    await sharp(Buffer.from(classes), { raw: { width: res, height: res, channels: 1 } })
+      .png({ compressionLevel: 9 })
+      .toFile(path.join(OUT, 'landcover.png'));
+    await writeMeta({ landcover: { size, res, classes: LC } });
   },
 };
 
