@@ -17,8 +17,11 @@ import { ChaseCamera } from './birds/camera';
 import { Controls } from './birds/input';
 import { SPECIES, speciesById, type Palette } from './birds/species';
 import { LoadingScreen } from './ui/loading';
+import { Trees } from './veg/trees';
+import { ShadowMap } from './render/shadows';
 import { Roads } from './world/roads';
 import { RoadIndex } from './world/roadIndex';
+import { createBirdShadowMaterial } from './birds/birdShader';
 import { loadSettings, type GameSettings } from './ui/settings';
 
 function paletteFor(s: GameSettings): Palette {
@@ -66,6 +69,12 @@ async function boot() {
   const sky = new Sky();
   engine.scene.add(sky.mesh, terrain.mesh);
 
+  loading.progress('Growing the Joshua tree forest', 0.95);
+  const treeBuf = await fetch('data/trees.bin').then((r) => r.arrayBuffer());
+  const trees = new Trees(treeBuf, world.meta.trees?.size ?? 16000, heightfield, roadIndex);
+  engine.scene.add(trees.group);
+  const seasonMonth = () => env.month - 1 + (env.day - 1) / 30;
+  trees.setSeason(seasonMonth());
   const roads = new Roads(world.osm, heightfield);
   engine.scene.add(roads.group);
 
@@ -76,6 +85,10 @@ async function boot() {
   const sp = (params.get('spawn') || '-150,1150,-1600,0').split(',').map(Number);
   player.flight.spawn(sp[0], sp[1], sp[2], sp[3]);
   engine.scene.add(player.object);
+
+  const shadow = new ShadowMap();
+  trees.addShadowCasters(shadow);
+  player.shadowCaster = shadow.addCaster(player.model.geometry, createBirdShadowMaterial(), player.object);
 
   const cam = engine.camera;
   const controls = new Controls();
@@ -152,6 +165,8 @@ async function boot() {
     atmosphere.update();
     terrainShadow.update();
     terrain.update(cam);
+    trees.update(cam);
+    shadow.update(engine.renderer, free ? cam.position : player.object.position);
     G.uInvExposure.value = 1 / env.exposure;
     sky.update(cam, env.exposure);
     engine.render(env.exposure, G.uNight.value, G.uTime.value);
@@ -169,6 +184,7 @@ async function boot() {
     env,
     terrain,
     heightfield,
+    trees,
     roads,
     roadIndex,
     G,
