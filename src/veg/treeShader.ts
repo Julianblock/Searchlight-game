@@ -55,7 +55,7 @@ void main() {
     n = normalize(mix(nCluster, aCrownN, 0.6));
   } else if (part > 3.5 && part < 4.5) {
     // Blossom panicles only open in season, and not on every plant.
-    float open = uBloom[sp] * step(fract(aInst1.w * 13.7), 0.85);
+    float open = uBloom[sp] * step(fract(aInst1.w * 13.7), 0.6);
     local = c + (local - c) * open;
   }
   float r = aInst1.x;
@@ -114,6 +114,7 @@ uniform vec3 uThatchColor[${SPECIES_COUNT}];
 uniform vec3 uBloomColor[${SPECIES_COUNT}];
 uniform float uLeafAmount[${SPECIES_COUNT}];
 uniform float uBloom[${SPECIES_COUNT}];
+uniform float uOpen[${SPECIES_COUNT}];
 uniform vec3 uFallTint;
 in vec3 vWorld;
 in vec3 vNormal;
@@ -193,7 +194,7 @@ void main() {
     float leafScale = vSize.y < 3.0 ? 0.06 : 0.1;
     if (sFine > 0.0) {
       vec4 c = leafCells(pm / leafScale + vSeed * 17.0);
-      float cut = mix(1.1, 0.8, edge);
+      float cut = mix(1.1, 0.8, edge) * (1.0 - 0.38 * uOpen[vSpecies]);
       if (c.x > mix(9.0, cut, sFine)) discard;
       vec3 leafN = vec3(hash13(c.yzw + 5.1), hash13(c.yzw + 7.7), hash13(c.yzw + 9.9)) - 0.5;
       leafN += 0.5 * vGust * sin(uTime * 9.0 + hash13(c.yzw) * 6.28) * vec3(0.6, 1.0, 0.4);
@@ -202,7 +203,7 @@ void main() {
     }
     if (sCoarse > 0.0) {
       vec4 c = leafCells(pm / (leafScale * 4.5) + vSeed * 5.0);
-      float cut = mix(1.5, 0.9, edge * edge);
+      float cut = mix(1.5, 0.9, edge * edge) * (1.0 - 0.3 * uOpen[vSpecies]);
       if (c.x > mix(9.0, cut, sCoarse)) discard;
       vec3 clumpN = vec3(hash13(c.yzw + 5.1), hash13(c.yzw + 7.7), hash13(c.yzw + 9.9)) - 0.5;
       clumpN += 0.25 * vGust * sin(uTime * 5.0 + hash13(c.yzw) * 6.28);
@@ -219,7 +220,7 @@ void main() {
     leafC = mix(leafC, uFallTint, clamp((fract(vSeed * 53.1) - 0.5) * 0.6, 0.0, 1.0) * float(vSpecies == 3 || vSpecies == 7));
     // Dusty, waxy desert foliage: darken and desaturate toward grey-green.
     float lum = dot(leafC, vec3(0.3, 0.55, 0.15));
-    leafC = mix(vec3(lum), leafC, 0.78) * mix(0.66, 0.82, smoothstep(0.35, 0.7, lum));
+    leafC = mix(vec3(lum), leafC, 0.8) * mix(0.8, 0.92, smoothstep(0.35, 0.7, lum));
     albedo = mix(uBarkColor[vSpecies] * 0.5, leafC, smoothstep(0.0, 0.5, amount));
     thin = amount;
   } else if (part == 3) {
