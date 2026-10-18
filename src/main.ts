@@ -31,6 +31,7 @@ import { ShadowMap } from './render/shadows';
 import { Roads } from './world/roads';
 import { RoadIndex } from './world/roadIndex';
 import { Water } from './world/water';
+import { Cemeteries, planCemeteries } from './world/cemetery';
 import { WaterSurface } from './render/waterSurface';
 import { createBirdShadowMaterial } from './birds/birdShader';
 import { loadSettings, type GameSettings } from './ui/settings';
@@ -57,6 +58,7 @@ async function boot() {
   const world = await loadWorld((label, f) => loading.progress(label, f * 0.9));
   loading.progress('Laying out the desert', 0.92);
   const heightfield = new Heightfield(world);
+  const cemeteryPlans = planCemeteries(world.osm);
   const roadIndex = new RoadIndex(world.osm);
   const water = new Water(world, heightfield, roadIndex);
   G.uWaterTex.value = water.texture;
@@ -86,7 +88,7 @@ async function boot() {
 
   loading.progress('Growing the Joshua tree forest', 0.95);
   const treeBuf = await fetch('data/trees.bin').then((r) => r.arrayBuffer());
-  const trees = new Trees(treeBuf, world.meta.trees?.size ?? 16000, heightfield, roadIndex);
+  const trees = new Trees(treeBuf, world.meta.trees?.size ?? 16000, heightfield, roadIndex, cemeteryPlans.flatMap((p) => p.trees), water);
   engine.scene.add(trees.group);
   const seasonMonth = () => env.month - 1 + (env.day - 1) / 30;
   trees.setSeason(seasonMonth());
@@ -94,6 +96,8 @@ async function boot() {
   engine.scene.add(grass.group);
   const roads = new Roads(world.osm, heightfield);
   engine.scene.add(roads.group);
+  const cemeteries = new Cemeteries(cemeteryPlans, heightfield);
+  engine.scene.add(cemeteries.group);
   const power = new PowerLines(world.osm, heightfield);
   const landmarks = new Landmarks(world.osm, heightfield);
   const props = new Props(world.osm, heightfield, power.pylons, (x, z) => landmarks.occupies(x, z));
@@ -122,6 +126,7 @@ async function boot() {
   trees.addShadowCasters(shadow);
   props.addShadowCasters(shadow);
   landmarks.addShadowCasters(shadow);
+  cemeteries.addShadowCasters(shadow);
   wildlife.addShadowCasters(shadow);
   player.shadowCaster = shadow.addCaster(player.model.geometry, createBirdShadowMaterial(), player.object);
 
@@ -246,6 +251,8 @@ async function boot() {
     flocks,
     fish,
     roads,
+    cemeteries,
+    cemeteryPlans,
     roadIndex,
     G,
     player,
