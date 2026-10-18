@@ -86,7 +86,7 @@ void main() {
     float shadow = shadowAt(vWorld, 0.0004);
     vec3 refl = skyRadianceDir(normalize(R)) * cloudShadow(vWorld + R * 400.0);
     float sd = max(dot(R, uSunDir), 0.0);
-    refl += sunRadiance(vWorld.y) * shadow * (pow(sd, 900.0) * 140.0 + pow(sd, 80.0) * 0.12);
+    refl += sunRadiance(vWorld.y) * shadow * (pow(sd, 900.0) * 55.0 + pow(sd, 80.0) * 0.12);
     refl += moonRadiance(vWorld.y) * pow(max(dot(R, uMoonDir), 0.0), 700.0) * 90.0;
     refl += flashLight(vec3(0.0, 1.0, 0.0)) * 0.3;
     // Down through the water to the bed along the refracted ray, and back.
