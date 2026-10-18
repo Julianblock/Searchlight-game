@@ -8,8 +8,8 @@ import { LC } from './meta';
 const RES = 2048;
 /** Detail grid over Davis Dam, the Colorado below it and the Laughlin strip. */
 const DETAIL = { cx: 30250, cz: 32600, size: 17500, res: 1536 };
-/** Davis Dam's crest line (m south of town): Lake Mohave above, the river below. */
-const DAM_Z = 29700;
+/** Just past Davis Dam's crest road (m south of town): Lake Mohave above, the river below. */
+const DAM_Z = 29590;
 const NO_WATER = -1000;
 
 export type WaterKind = 'lake' | 'river' | 'pond';
@@ -396,7 +396,10 @@ export class Water {
     const lake = rasterize(g, lakeRings);
     const river = rasterize(g, riverRings);
     const damRow = Math.floor(g.fj(DAM_Z));
-    for (let k = 0; k < R * R; k++) if (lake[k] || k < (damRow + 1) * R) river[k] = 0;
+    for (let k = 0; k < R * R; k++) {
+      if (k >= (damRow + 1) * R) lake[k] = 0;
+      if (lake[k] || k < (damRow + 1) * R) river[k] = 0;
+    }
 
     // River surface per row from the elevation model's low water inside the banks.
     const rowLevel = new Float32Array(R).fill(NaN);
