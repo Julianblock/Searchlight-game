@@ -1,5 +1,8 @@
 export interface RegionSpec {
   size: number;
+  /** Centre of an off-centre region, metres from town; absent means centred on town. */
+  cx?: number;
+  cz?: number;
   heightRes: number;
   imageRes: number;
 }
@@ -9,7 +12,7 @@ export interface HeightEncoding {
   scale: number;
 }
 
-export type RegionName = 'inner' | 'mid' | 'far';
+export type RegionName = 'inner' | 'mid' | 'far' | 'laughlin';
 
 export interface WorldMeta {
   center: { lat: number; lon: number };

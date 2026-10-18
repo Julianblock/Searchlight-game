@@ -11,6 +11,9 @@ export interface Pixels {
 export interface HeightGrid {
   res: number;
   size: number;
+  /** Region centre (m east, m south of town). */
+  cx: number;
+  cz: number;
   heights: Float32Array;
   ao: Float32Array;
 }
@@ -42,7 +45,7 @@ function readPixels(bmp: ImageBitmap): Pixels {
   return { width: bmp.width, height: bmp.height, data: img.data };
 }
 
-function decodeHeights(px: Pixels, size: number, enc: { offset: number; scale: number }, hasAO: boolean): HeightGrid {
+function decodeHeights(px: Pixels, spec: { size: number; cx?: number; cz?: number }, enc: { offset: number; scale: number }, hasAO: boolean): HeightGrid {
   const n = px.width * px.height;
   const heights = new Float32Array(n);
   const ao = new Float32Array(n);
@@ -51,12 +54,12 @@ function decodeHeights(px: Pixels, size: number, enc: { offset: number; scale: n
     heights[i] = (d[i * 4] * 256 + d[i * 4 + 1]) / enc.scale - enc.offset;
     ao[i] = hasAO ? d[i * 4 + 2] / 255 : 1;
   }
-  return { res: px.width, size, heights, ao };
+  return { res: px.width, size: spec.size, cx: spec.cx ?? 0, cz: spec.cz ?? 0, heights, ao };
 }
 
 export async function loadWorld(onProgress: Progress): Promise<WorldData> {
   const meta: WorldMeta = await (await fetch(BASE + 'meta.json')).json();
-  const regions: RegionName[] = ['inner', 'mid', 'far'];
+  const regions: RegionName[] = ['inner', 'mid', 'far', 'laughlin'];
 
   const jobs: [string, () => Promise<unknown>][] = [];
   const heights = {} as Record<RegionName, HeightGrid>;
@@ -70,7 +73,7 @@ export async function loadWorld(onProgress: Progress): Promise<WorldData> {
       `Elevation · ${r}`,
       async () => {
         const px = readPixels(await fetchBitmap(`height_${r}.png`));
-        heights[r] = decodeHeights(px, meta.regions[r].size, meta.heightEncoding[r], r !== 'far');
+        heights[r] = decodeHeights(px, meta.regions[r], meta.heightEncoding[r], r !== 'far');
       },
     ]);
     jobs.push([
