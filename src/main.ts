@@ -18,6 +18,7 @@ import { Controls } from './birds/input';
 import { SPECIES, speciesById, type Palette } from './birds/species';
 import { LoadingScreen } from './ui/loading';
 import { Trees } from './veg/trees';
+import { Grass } from './veg/grass';
 import { ShadowMap } from './render/shadows';
 import { Roads } from './world/roads';
 import { RoadIndex } from './world/roadIndex';
@@ -75,6 +76,8 @@ async function boot() {
   engine.scene.add(trees.group);
   const seasonMonth = () => env.month - 1 + (env.day - 1) / 30;
   trees.setSeason(seasonMonth());
+  const grass = new Grass(terrain.material.uniforms, heightfield);
+  engine.scene.add(grass.group);
   const roads = new Roads(world.osm, heightfield);
   engine.scene.add(roads.group);
 
@@ -166,6 +169,7 @@ async function boot() {
     terrainShadow.update();
     terrain.update(cam);
     trees.update(cam);
+    grass.update(cam.position, seasonMonth());
     shadow.update(engine.renderer, free ? cam.position : player.object.position);
     G.uInvExposure.value = 1 / env.exposure;
     sky.update(cam, env.exposure);
@@ -185,6 +189,7 @@ async function boot() {
     terrain,
     heightfield,
     trees,
+    grass,
     roads,
     roadIndex,
     G,
