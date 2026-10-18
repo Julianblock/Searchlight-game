@@ -13,6 +13,8 @@ export interface RoadHit {
   kind: string;
   /** Approximate paved half-width (m). */
   halfWidth: number;
+  /** OSM tracktype 1 (graded) … 5 (faint two-rut), 0 when untagged. */
+  grade: number;
 }
 
 const CELL = 120;
@@ -21,14 +23,14 @@ const CELL = 120;
 export class RoadIndex {
   private cells = new Map<number, number[]>();
   private seg: Float32Array;
-  private meta: { name: string; kind: string; half: number }[] = [];
+  private meta: { name: string; kind: string; half: number; grade: number }[] = [];
   private segRoad: Uint32Array;
 
   constructor(osm: OsmData) {
     const s: number[] = [];
     const r: number[] = [];
     osm.roads.forEach((road, ri) => {
-      this.meta.push({ name: road.name, kind: road.kind, half: roadSpec(road).half });
+      this.meta.push({ name: road.name, kind: road.kind, half: roadSpec(road).half, grade: road.grade ?? 0 });
       const p = road.pts;
       for (let k = 0; k + 3 < p.length; k += 2) {
         const id = s.length / 4;
@@ -78,7 +80,7 @@ export class RoadIndex {
           if (d < bestD) {
             bestD = d;
             const len = Math.sqrt(len2);
-            best = { dist: d, x: px, z: pz, dx: ex / len, dz: ez / len, name: m.name, kind: m.kind, halfWidth: m.half };
+            best = { dist: d, x: px, z: pz, dx: ex / len, dz: ez / len, name: m.name, kind: m.kind, halfWidth: m.half, grade: m.grade };
           }
         }
       }
