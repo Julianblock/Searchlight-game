@@ -5,7 +5,7 @@ export const propVertex = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_vertex>
 uniform vec3 uCamPos;
-in float aPart;    // 0 wall, 1 roof, 2 metal
+in float aPart;    // 0 wall, 1 roof, 2 metal, 3 boat hull
 in vec4 aT0;       // x, y, z, angle
 in vec4 aT1;       // sx, sy, sz, kind (0 house, 1 shed, 2 tank, 3 tower, 4 hut, 5 vehicle, 6 trailer, 7 stucco)
 in vec4 aWall;     // rgb, lit
@@ -85,7 +85,8 @@ void main() {
   bool homey = kind < 0.5 || (kind > 3.5 && kind < 4.5) || kind > 5.5;
   if (kind > 4.5 && kind < 5.5) {
     // Vehicles: glossy paint, dark glass, rubber.
-    if (vPart > 1.5) { albedo = vec3(0.025); rough = 0.9; }
+    if (vPart > 2.5) { albedo = vRoof.rgb * 0.7; rough = 0.25; }
+    else if (vPart > 1.5) { albedo = vec3(0.025); rough = 0.9; }
     else if (vPart > 0.5) { albedo = vec3(0.02, 0.025, 0.03); rough = 0.08; }
     else { albedo = vWall.rgb * 0.7; rough = 0.22; }
   } else if (vPart > 1.5) {
