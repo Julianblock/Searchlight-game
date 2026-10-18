@@ -185,7 +185,7 @@ void main() {
   float kingman = pow(max(dot(dh, normalize(vec2(78600.0, 30600.0) - uCamPos.xz)), 0.0), 40.0);
   // Low cloud reflects the city lights back down as an orange ceiling glow.
   float glow = mix(hz, 0.35 + 0.65 * hz, deck) * (1.0 + deck * 1.5);
-  col += vec3(1.0, 0.6, 0.32) * (vegas * 0.0026 + hendo * 0.0011 + laughlin * 0.0012 + kingman * 0.0004 + 0.00002 + deck * 0.00005) * glow * uNight;
+  col += vec3(1.0, 0.6, 0.32) * (vegas * 0.0011 + hendo * 0.0005 + laughlin * 0.0006 + kingman * 0.0002 + 0.00002 + deck * 0.00005) * glow * uNight;
 
   // The Luxor Sky Beam: 42 billion candela straight up from the pyramid on the
   // Strip, a thin pale-blue needle standing on the northern horizon all night.
@@ -201,7 +201,7 @@ void main() {
   float el = dir.y / max(length(dir.xz), 1e-4);
   float rise = smoothstep(baseEl - 0.002, baseEl + 0.004, el) * exp(-max(el - baseEl, 0.0) * 4.5);
   float beam = exp(-across * across / (bw * bw)) * facing * rise;
-  col += vec3(0.82, 0.88, 1.0) * beam * 0.03 * uNight * (1.0 - deck * 0.85) * (0.9 + 0.1 * sin(uTime * 0.7));
+  col += vec3(0.82, 0.88, 1.0) * beam * 0.006 * uNight * (1.0 - deck * 0.85) * (0.9 + 0.1 * sin(uTime * 0.7));
 
   vec4 cl = cloudLayer(dir) * clearSky;
   col = col * (1.0 - cl.a) + cl.rgb;
