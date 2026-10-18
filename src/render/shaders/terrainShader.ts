@@ -214,14 +214,20 @@ void main() {
   float nearFade = clamp(1.0 - dist / 400.0, 0.0, 1.0) * smoothstep(2.0, 0.6, fp);
   alb *= 1.0 + 0.5 * fine * detailFade;
   // Gravel and pebbles underfoot: varnished dark stones and pale quartz.
-  float pebbleFade = smoothstep(0.12, 0.03, fp) * (1.0 - wash * 0.7) * (1.0 - waterFrac);
+  float pebbleFade = smoothstep(0.06, 0.015, fp) * (1.0 - wash * 0.7) * (1.0 - waterFrac);
   if (pebbleFade > 0.0) {
-    vec2 pb = pebbles(ROT * xz / 0.055);
-    float stone = smoothstep(1.0, 0.8, pb.x) * step(0.55 + 0.35 * (1.0 - pave), pb.y);
-    // Relative to the soil so stones never out-shine the ground they sit on.
-    vec3 varnish = alb * vec3(0.62, 0.56, 0.52) * mix(0.7, 1.1, fract(pb.y * 7.0));
-    vec3 stoneCol = pb.y > 0.985 ? alb * 1.25 : varnish;
-    alb = mix(alb, stoneCol, stone * pebbleFade * 0.42);
+    // Fine gravel, as light as it is dark, so the soil keeps its average tone.
+    vec2 gv = pebbles(ROT * xz / 0.022);
+    float grit = smoothstep(1.0, 0.7, gv.x) * step(0.4, gv.y);
+    alb *= 1.0 + (fract(gv.y * 11.0) - 0.5) * 0.36 * grit * pebbleFade;
+    // Scattered cobbles: varnished basalt, rusty andesite, tan granite, white quartz.
+    vec2 pb = pebbles(ROT * xz / 0.07);
+    float stone = smoothstep(1.0, 0.75, pb.x) * step(0.75 + 0.2 * (1.0 - pave), pb.y);
+    float tone = fract(pb.y * 7.0);
+    vec3 stoneCol = alb * mix(vec3(0.62, 0.56, 0.52), vec3(1.12, 0.96, 0.8), tone);
+    stoneCol = pb.y > 0.99 ? alb * 1.3 : stoneCol;
+    stoneCol *= 0.8 + 0.35 * (1.0 - pb.x);
+    alb = mix(alb, stoneCol, stone * pebbleFade * 0.5);
   }
   float h0 = vnoise(q1 / 3.7) + 0.5 * vnoise(q2 / 1.4);
   float hx = vnoise((q1 + vec2(0.5, 0.0)) / 3.7) + 0.5 * vnoise((q2 + vec2(0.5, 0.0)) / 1.4);
