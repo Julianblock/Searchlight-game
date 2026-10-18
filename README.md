@@ -16,7 +16,7 @@ The terrain, land cover, roads, buildings and trees all come from real survey da
 - **Wildlife.** Desert bighorn on the crags, wild burros toward the river, coyotes, black-tailed jackrabbits and desert tortoises. Overhead, raven pairs tumble, vultures kettle, swifts race along the cliffs, white pelicans and Canada geese pass through on migration, cormorants work the lake and blackbirds and doves gather in town, all varying by season.
 - **Roads and traffic.** Cars, pickups and big rigs drive the real road network, including US-95, Cottonwood Cove Road and the Joshua Tree Highway. Tortoise fencing lines the highways. Headlights and taillights show at night.
 - **Searchlight Cemetery.** Rock-ringed miners' graves, wooden crosses, picket pens and plastic flowers under the Joshua trees, behind a barbed-wire fence with a pipe gate arch. After dark, the old miners walk the graves with their carbide lamps.
-- **Places.** The menu's Places tab starts you on US-95 rolling into town, on Main Street, on Cottonwood Cove Road, at the marina, on the Joshua Tree Highway, at Walking Box Ranch, at the cemetery gate, in Cal-Nev-Ari or on Christmas Tree Pass.
+- **Places.** The menu's Places tab starts you on US-95 rolling into town, at the Duplex Hill overlook, on Main Street, on Cottonwood Cove Road, at the marina, on the Joshua Tree Highway, at Walking Box Ranch, at the cemetery gate, in Cal-Nev-Ari or on Christmas Tree Pass.
 - **Weather.** Crystal-clear, clear, desert haze, scattered cloud, overcast, dust storms, rain, monsoon thunderstorms and snow. Rain darkens the caliche and runs in the washes; snow dusts the Joshua trees and melts in the sun. Lightning lights up the desert and its thunder arrives late by the strike's distance.
 - **Drive a pickup.** Swap between bird and truck at any time. The truck has a first-person cockpit with live gauges, headlights, wipers and dust trails. It grips on asphalt, slides on gravel and caliche, crawls through sandy washes and over rock, and can wade into the lake (or drown).
 - **Lake Mohave.** The Colorado River backed up behind Davis Dam, carved into the terrain at its real shape, reflecting the canyon walls. Birds float and can dive under. The water is cold and clear, with twelve real species: razorback sucker, bonytail, striped bass, threadfin shad, largemouth and smallmouth bass, rainbow trout, channel catfish, bluegill, green sunfish, carp and mosquitofish.
@@ -64,7 +64,7 @@ npm run build
 npm run data      # rebuild public/data from USGS / USDA / OSM sources
 ```
 
-Debug URL parameters: `?fly` skips the menu, `?drive` starts in the truck, `?weather=storm` (or `rain`, `snow`, `dust`, …) and `?time=night` pick conditions, `?place=town` (or `main`, `cove`, `lake`, `joshua`, `walkingbox`, `cemetery`, `calnevari`, `christmastree`) picks the start point, and `?free&cam=x,y,z,yaw,pitch` starts a free camera.
+Debug URL parameters: `?fly` skips the menu, `?drive` starts in the truck, `?weather=storm` (or `rain`, `snow`, `dust`, …) and `?time=night` pick conditions, `?place=town` (or `overlook`, `main`, `cove`, `lake`, `joshua`, `walkingbox`, `cemetery`, `calnevari`, `christmastree`) picks the start point, and `?free&cam=x,y,z,yaw,pitch` starts a free camera.
 
 Every push to `main` builds and deploys to GitHub Pages through `.github/workflows/pages.yml`.
 
