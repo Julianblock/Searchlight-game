@@ -31,10 +31,10 @@ export function latLonToMercatorPx(lat, lon, zoom) {
   };
 }
 
-/** Bounding box (lat/lon) of a square region of `size` metres centred at the origin. */
-export function regionBounds(size) {
+/** Bounding box (lat/lon) of a square region of `size` metres centred at (cx, cz). */
+export function regionBounds(size, cx = 0, cz = 0) {
   const h = size / 2;
-  const nw = localToLatLon(-h, -h);
-  const se = localToLatLon(h, h);
+  const nw = localToLatLon(cx - h, cz - h);
+  const se = localToLatLon(cx + h, cz + h);
   return { north: nw.lat, south: se.lat, west: nw.lon, east: se.lon };
 }
