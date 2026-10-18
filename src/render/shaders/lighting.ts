@@ -17,26 +17,35 @@ float snowAmount(vec3 n, vec2 xz, float y) {
 }
 `;
 
-/** Lake Mohave and ponds baked by Water: surface height and channel mask. */
+/** Lake Mohave, the Colorado and ponds baked by Water: surface height and channel mask. */
 export const waterCommon = /* glsl */ `
 #ifndef WATER_COMMON
 #define WATER_COMMON
-uniform sampler2D uWaterTex;
+uniform sampler2D uWaterTex; // main grid on top, Davis Dam / Laughlin grid below
 uniform float uWaterSize;
+uniform vec3 uWaterDetail;
+uniform vec4 uWaterAtlas;
 uniform float uUnderwater;
 uniform float uVision;
 uniform vec4 uVolcano;
 uniform float uCamWaterY;
 
-/** x: water surface height (m), y: channel mask (0 on dry land). */
 /**
- * Lake Mohave runs off the north and east edges of the water grid; edge texels
+ * x: water surface height (m), y: channel mask (0 on dry land).
+ * Lake Mohave runs off the north and east edges of the main grid; edge texels
  * carry it on outward, where the far terrain's flat reservoir floor bounds it.
+ * South of the main grid the detail grid takes over.
  */
 vec2 waterAt(vec2 xz) {
+  vec2 dq = (xz - uWaterDetail.xy) / uWaterDetail.z + 0.5;
+  if (all(greaterThan(dq, vec2(0.0))) && all(lessThan(dq, vec2(1.0)))) {
+    dq = clamp(dq, vec2(0.5 / uWaterAtlas.w), vec2(1.0 - 0.5 / uWaterAtlas.w));
+    return textureLod(uWaterTex, vec2(dq.x * uWaterAtlas.y, uWaterAtlas.x + dq.y * uWaterAtlas.z), 0.0).rg;
+  }
   vec2 uv = xz / uWaterSize + 0.5;
-  if (any(lessThan(uv, vec2(-0.5))) || any(greaterThan(uv, vec2(1.5)))) return vec2(-1000.0, 0.0);
-  return textureLod(uWaterTex, clamp(uv, vec2(0.0), vec2(1.0)), 0.0).rg;
+  if (any(lessThan(uv, vec2(-0.5))) || uv.x > 1.5 || uv.y > 1.0) return vec2(-1000.0, 0.0);
+  uv = clamp(uv, vec2(0.5 / 2048.0), vec2(1.0 - 0.5 / 2048.0));
+  return textureLod(uWaterTex, vec2(uv.x, uv.y * uWaterAtlas.x), 0.0).rg;
 }
 
 /** Clear Colorado River water: red is gone within a few metres, blue-green carries far. */

@@ -86,6 +86,10 @@ async function boot() {
   const water = new Water(world, heightfield, roadIndex);
   G.uWaterTex.value = water.texture;
   G.uWaterSize.value = water.size;
+  G.uWaterDetail.value.copy(water.detail);
+  G.uWaterAtlas.value.copy(water.atlas);
+  const lau = world.heights.laughlin;
+  G.uLauRect.value.set(lau.cx, lau.cz, lau.size);
   const tex = createWorldTextures(world, engine.renderer);
   const regionSizes: [number, number, number] = [
     world.meta.regions.inner.size,
