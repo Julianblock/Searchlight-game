@@ -1,0 +1,402 @@
+import * as THREE from 'three';
+import { G } from '../render/globals';
+import { seasonUniforms } from '../render/terrain';
+import {
+  celestialMatrix,
+  julianDate,
+  moonPhase,
+  moonRaDec,
+  pacificDate,
+  raDecToVector,
+  sunRaDec,
+} from '../sky/astro';
+
+export type Season = 'winter' | 'bloom' | 'spring' | 'summer' | 'fall';
+export type TimePreset =
+  | 'night'
+  | 'predawn'
+  | 'sunrise'
+  | 'morning'
+  | 'midday'
+  | 'afternoon'
+  | 'golden'
+  | 'sunset'
+  | 'dusk';
+export type Weather = 'crisp' | 'clear' | 'hazy' | 'partly' | 'overcast' | 'dust' | 'rain' | 'storm' | 'snow';
+export type MoonPref = 'full' | 'quarter' | 'new' | 'actual';
+
+export const MOONS: Record<MoonPref, { label: string }> = {
+  full: { label: 'Full Moon' },
+  quarter: { label: 'Half Moon' },
+  new: { label: 'New Moon (Milky Way)' },
+  actual: { label: 'Real Calendar' },
+};
+
+export const SEASONS: Record<Season, { label: string; month: number; day: number; blurb: string }> = {
+  winter: { label: 'Winter', month: 1, day: 14, blurb: 'Frosty mornings, snow on Charleston Peak, bald eagles over Lake Mohave' },
+  bloom: { label: 'Joshua Bloom', month: 3, day: 18, blurb: 'Joshua trees crowned in cream, marigolds and globemallow on the bajadas' },
+  spring: { label: 'Late Spring', month: 4, day: 28, blurb: 'Creosote in yellow flower, cactus blooms, migrants moving through' },
+  summer: { label: 'Monsoon Summer', month: 8, day: 4, blurb: '110°F, heat shimmer on US-95, thunderheads over the Newberrys' },
+  fall: { label: 'Fall', month: 10, day: 18, blurb: 'Long golden light, tarantulas on the road, vultures kettling south' },
+};
+
+export const TIMES: Record<TimePreset, { label: string }> = {
+  night: { label: 'Night' },
+  predawn: { label: 'Blue Hour (Dawn)' },
+  sunrise: { label: 'Sunrise' },
+  morning: { label: 'Morning' },
+  midday: { label: 'Midday' },
+  afternoon: { label: 'Afternoon' },
+  golden: { label: 'Golden Hour' },
+  sunset: { label: 'Sunset' },
+  dusk: { label: 'Dusk' },
+};
+
+interface WeatherSpec {
+  label: string;
+  mie: number;
+  cloud: number;
+  fog: number;
+  fogTop: number;
+  /** Mean surface wind speed (m/s). */
+  wind: number;
+  /** Rainfall and snowfall intensity 0..1. */
+  rain: number;
+  snow: number;
+  lightning?: boolean;
+  /** The fog layer is blowing dust rather than water droplets. */
+  dust?: boolean;
+  /** Ground state when the weather is picked: wetness, snow cover. */
+  wet: number;
+  cover: number;
+}
+
+export const WEATHERS: Record<Weather, WeatherSpec> = {
+  crisp: { label: 'Crystal Clear (after rain)', mie: 0.45, cloud: 0.12, fog: 0, fogTop: -1000, wind: 6.5, rain: 0, snow: 0, wet: 0.45, cover: 0 },
+  clear: { label: 'Clear', mie: 1.5, cloud: 0.04, fog: 0, fogTop: -1000, wind: 3.5, rain: 0, snow: 0, wet: 0, cover: 0 },
+  hazy: { label: 'Desert Haze', mie: 3.2, cloud: 0.0, fog: 0, fogTop: -1000, wind: 1.3, rain: 0, snow: 0, wet: 0, cover: 0 },
+  partly: { label: 'Scattered Clouds', mie: 1.3, cloud: 0.5, fog: 0, fogTop: -1000, wind: 4.5, rain: 0, snow: 0, wet: 0, cover: 0 },
+  overcast: { label: 'Overcast', mie: 2.2, cloud: 0.97, fog: 0, fogTop: -1000, wind: 5.0, rain: 0, snow: 0, wet: 0.1, cover: 0 },
+  dust: { label: 'Dust Storm', mie: 6.0, cloud: 0.15, fog: 0.0032, fogTop: 2000, wind: 13, rain: 0, snow: 0, wet: 0, cover: 0, dust: true },
+  rain: { label: 'Rain', mie: 5.5, cloud: 1, fog: 0, fogTop: -1000, wind: 5.5, rain: 0.65, snow: 0, wet: 0.85, cover: 0 },
+  storm: { label: 'Monsoon Storm', mie: 7.5, cloud: 1, fog: 0, fogTop: -1000, wind: 9.5, rain: 1, snow: 0, lightning: true, wet: 1, cover: 0 },
+  snow: { label: 'Snow', mie: 4.0, cloud: 1, fog: 0, fogTop: -1000, wind: 2.5, rain: 0, snow: 0.6, wet: 0.35, cover: 0.55 },
+};
+
+/** A lightning strike: where it hit and how far from the listener. */
+export interface Strike {
+  x: number;
+  z: number;
+  dist: number;
+}
+
+// Month keyframes (Jan..Dec) for the desert around Searchlight.
+const K = {
+  green: [0.35, 0.55, 0.8, 0.7, 0.35, 0.1, 0, 0.05, 0.1, 0.05, 0.1, 0.2],
+  joshuaBloom: [0, 0.3, 0.95, 0.7, 0.1, 0, 0, 0, 0, 0, 0, 0],
+  flowers: [0, 0.1, 0.75, 0.9, 0.3, 0, 0, 0, 0, 0, 0, 0],
+  monsoon: [0, 0, 0, 0, 0, 0, 0.4, 0.75, 0.5, 0.1, 0, 0],
+  bleach: [0.2, 0.1, 0, 0.1, 0.4, 0.8, 1, 0.9, 0.8, 0.6, 0.4, 0.3],
+  heat: [0, 0, 0.1, 0.3, 0.6, 0.9, 1, 1, 0.8, 0.4, 0.1, 0],
+  creosoteBloom: [0, 0, 0.4, 0.9, 0.3, 0, 0, 0.2, 0.3, 0, 0, 0],
+  dust: [0.2, 0.3, 0.5, 0.6, 0.5, 0.4, 0.5, 0.4, 0.3, 0.2, 0.2, 0.2],
+  snowLine: [1700, 1700, 2000, 2500, 3200, 4000, 4400, 4400, 4200, 3200, 2400, 1900],
+  // Wintering bald eagles, ravens and waterfowl on the lake.
+  geese: [1, 0.9, 0.5, 0.1, 0, 0, 0, 0, 0, 0.3, 0.8, 1],
+  // Mean afternoon air temperature (°C) in Searchlight at 1,080 m.
+  tempC: [13, 15, 19, 23, 29, 35, 38, 37, 33, 26, 18, 13],
+};
+
+function monthly(keys: number[], monthF: number): number {
+  const m = monthF - 0.5;
+  const i0 = ((Math.floor(m) % 12) + 12) % 12;
+  const i1 = (i0 + 1) % 12;
+  const t = m - Math.floor(m);
+  return keys[i0] + (keys[i1] - keys[i0]) * t;
+}
+
+const RAD = Math.PI / 180;
+
+export class Environment {
+  season: Season = 'summer';
+  time: TimePreset = 'golden';
+  weather: Weather = 'clear';
+  year = 2026;
+  /** Local wall-clock hours (fractional). */
+  hours = 18;
+  timeFlow = 0; // game seconds per real second (0 = frozen)
+  latitude = 35.4652;
+  longitude = -114.9195;
+  sunAltitude = 0;
+  exposure = 0.3;
+  geese = 0;
+  /** Smoothed rainfall / snowfall intensity 0..1. */
+  rain = 0;
+  snowFall = 0;
+  /** Ground wetness and snow cover, 0..1; they evolve with the weather. */
+  wet = 0;
+  snowCover = 0;
+  /** Where lightning strikes are measured from (the camera). */
+  listener = new THREE.Vector3();
+  /** Strikes since the last call to takeStrikes(). */
+  private strikes: Strike[] = [];
+  private strikeT = 4;
+  private pulses: { t: number; k: number }[] = [];
+  private flashT = 0;
+  private windT = 0;
+  private sunVec = new THREE.Vector3();
+  private moonVec = new THREE.Vector3();
+
+  get month() {
+    return SEASONS[this.season].month;
+  }
+  get day() {
+    return SEASONS[this.season].day;
+  }
+
+  /** Preferred lunar phase; shifts the astronomical date up to ±15 days. */
+  moon: MoonPref = 'full';
+  private dayShift = 0;
+
+  date(hours = this.hours) {
+    return pacificDate(this.year, this.month, this.day + this.dayShift, hours);
+  }
+
+  private chooseMoonDay() {
+    this.dayShift = 0;
+    if (this.moon === 'actual') return;
+    const target = this.moon === 'full' ? 1 : this.moon === 'quarter' ? 0.5 : 0;
+    let best = Infinity;
+    for (let d = -15; d <= 15; d++) {
+      const jd = julianDate(pacificDate(this.year, this.month, this.day + d, 23));
+      const ph = moonPhase(jd);
+      // Prefer a waxing quarter so the moon is up in the evening.
+      const score = Math.abs(ph.illum - target) + (this.moon === 'quarter' && !ph.waxing ? 0.3 : 0);
+      if (score < best) {
+        best = score;
+        this.dayShift = d;
+      }
+    }
+  }
+
+  sunDirAt(hours: number, out = new THREE.Vector3()) {
+    const jd = julianDate(this.date(hours));
+    const m = celestialMatrix(jd, this.latitude, this.longitude);
+    return raDecToVector(sunRaDec(jd), out).applyMatrix3(m).normalize();
+  }
+
+  /** Finds the local hour at which the sun reaches an altitude (degrees). */
+  hourForAltitude(altDeg: number, rising: boolean): number {
+    const target = Math.sin(altDeg * RAD);
+    const v = new THREE.Vector3();
+    let prev = this.sunDirAt(rising ? 0 : 12, v).y;
+    for (let m = 1; m <= 12 * 60; m++) {
+      const h = (rising ? 0 : 12) + m / 60;
+      const y = this.sunDirAt(h, v).y;
+      if (rising ? prev < target && y >= target : prev > target && y <= target) return h;
+      prev = y;
+    }
+    return rising ? 6 : 18;
+  }
+
+  hoursForPreset(p: TimePreset): number {
+    switch (p) {
+      case 'night':
+        return this.hourForAltitude(-18, false) + 1.5;
+      case 'predawn':
+        return this.hourForAltitude(-5, true);
+      case 'sunrise':
+        return this.hourForAltitude(1.5, true);
+      case 'morning':
+        return this.hourForAltitude(1.5, true) + 2.2;
+      case 'midday':
+        return (this.hourForAltitude(0, true) + this.hourForAltitude(0, false)) / 2;
+      case 'afternoon':
+        return this.hourForAltitude(0, false) - 3;
+      case 'golden':
+        return this.hourForAltitude(7, false);
+      case 'sunset':
+        return this.hourForAltitude(1.0, false);
+      case 'dusk':
+        return this.hourForAltitude(-4.5, false);
+    }
+  }
+
+  /** Switches weather and jumps the ground to a plausible state for it. */
+  setWeather(w: Weather) {
+    this.weather = w;
+    const s = WEATHERS[w];
+    this.rain = s.rain;
+    this.snowFall = s.snow;
+    if (s.rain || s.snow || s.wet > this.wet) this.wet = s.wet;
+    if (s.cover > this.snowCover || s.rain) this.snowCover = s.cover;
+  }
+
+  takeStrikes(): Strike[] {
+    const s = this.strikes;
+    this.strikes = [];
+    return s;
+  }
+
+  private updateWeather(dt: number, w: WeatherSpec, mf: number) {
+    const t = this.windT;
+    // Showers come in waves rather than at a constant rate.
+    const wave = 0.75 + 0.18 * Math.sin(t * 0.05) + 0.07 * Math.sin(t * 0.23 + 2);
+    const k = Math.min(1, dt * 0.5);
+    this.rain += (w.rain * wave - this.rain) * k;
+    this.snowFall += (w.snow * wave - this.snowFall) * k;
+
+    const sunUp = Math.max(0, this.sunVec.y);
+    // Snow means the air is near freezing; otherwise use the seasonal mean,
+    // colder at night.
+    const temp = this.snowFall > 0.02 ? 0 : monthly(K.tempC, mf) - 9 * (1 - Math.min(1, sunUp * 3));
+    const melt = Math.max(0, temp) * 0.0004 * (1 + sunUp * (1 - w.cloud)) + this.rain * 0.008;
+    const prevCover = this.snowCover;
+    // Desert snow builds slowly, and the dry warm ground eats it from below.
+    const settle = ((this.snowFall * dt) / 600) * Math.max(0, 0.65 - this.snowCover);
+    this.snowCover = THREE.MathUtils.clamp(this.snowCover + settle - melt * dt, 0, 1);
+    const meltWater = Math.max(0, prevCover - this.snowCover) * 3;
+
+    const dry = (0.00025 + 0.0015 * sunUp * (1 - w.cloud)) * (1 + Math.hypot(G.uWind.value.x, G.uWind.value.y) * 0.08);
+    this.wet = THREE.MathUtils.clamp(this.wet + (this.rain * dt) / 90 + meltWater - dry * dt * (1 - this.rain), 0, 1);
+
+    G.uRain.value = this.rain;
+    G.uSnowFall.value = this.snowFall;
+    G.uWet.value = this.wet;
+    G.uSnowCover.value = this.snowCover;
+
+    // Lightning: each strike is a few return strokes over half a second.
+    if (w.lightning) {
+      this.strikeT -= dt;
+      if (this.strikeT <= 0) {
+        this.strikeT = 3 + Math.random() * 11;
+        const a = Math.random() * Math.PI * 2;
+        const dist = 400 + Math.pow(Math.random(), 1.5) * 9000;
+        const x = this.listener.x + Math.sin(a) * dist;
+        const z = this.listener.z + Math.cos(a) * dist;
+        this.strikes.push({ x, z, dist });
+        const k0 = 1.6 / (1 + dist / 2500);
+        const n = 2 + Math.floor(Math.random() * 3);
+        let at = this.flashT;
+        for (let i = 0; i < n; i++) {
+          this.pulses.push({ t: at, k: k0 * (i === 0 ? 1 : 0.4 + Math.random() * 0.6) });
+          at += 0.05 + Math.random() * 0.12;
+        }
+      }
+    }
+    this.flashT += dt;
+    let flash = 0;
+    this.pulses = this.pulses.filter((p) => this.flashT - p.t < 1.5);
+    for (const p of this.pulses) {
+      const age = this.flashT - p.t;
+      if (age >= 0) flash += p.k * Math.exp(-age * 14);
+    }
+    G.uFlash.value = flash;
+  }
+
+  setPreset(p: TimePreset) {
+    this.chooseMoonDay();
+    this.time = p;
+    this.hours = this.hoursForPreset(p);
+  }
+
+  /** Pushes the current state into the global uniforms. */
+  apply(dt: number) {
+    if (this.timeFlow) this.hours = (this.hours + (dt * this.timeFlow) / 3600 + 24) % 24;
+
+    const jd = julianDate(this.date());
+    const m = celestialMatrix(jd, this.latitude, this.longitude, G.uCelestial.value);
+    raDecToVector(sunRaDec(jd), this.sunVec).applyMatrix3(m).normalize();
+    raDecToVector(moonRaDec(jd), this.moonVec).applyMatrix3(m).normalize();
+    G.uSunDir.value.copy(this.sunVec);
+    G.uMoonDir.value.copy(this.moonVec);
+    const phase = moonPhase(jd);
+    G.uMoonIllum.value = phase.illum;
+    G.uMoonPhaseAngle.value = phase.angle;
+
+    const sunAlt = Math.asin(this.sunVec.y) / RAD;
+    this.sunAltitude = sunAlt;
+    const moonUp = THREE.MathUtils.smoothstep(this.moonVec.y, -0.02, 0.05);
+    // Moonlight is boosted far above reality so night play reads like "day for night".
+    G.uMoonScale.value = 9e-5 * (0.15 + 0.85 * phase.illum) * moonUp;
+    G.uNight.value = THREE.MathUtils.smoothstep(-sunAlt, 2, 10);
+
+    const w = WEATHERS[this.weather];
+    G.uMieScale.value = w.mie;
+    G.uCloudCover.value = w.cloud;
+    G.uFogDensity.value = w.fog;
+    G.uFogTop.value = w.fogTop;
+    if (w.dust) G.uFogTint.value.set(1.35, 0.95, 0.6);
+    else G.uFogTint.value.set(1, 1, 1);
+
+    // Surface wind: north wind behind winter fronts, the gusty southwesterlies
+    // of spring and the monsoon's southerly flow. Strength and direction wander.
+    this.windT += dt;
+    const t = this.windT;
+    const summer = Math.max(0, Math.cos(((this.month - 7) / 12) * Math.PI * 2));
+    const north = this.weather === 'crisp' ? 1 : 1 - summer;
+    const from = THREE.MathUtils.lerp(-2.36, 0.15, north) + 0.25 * Math.sin(t * 0.021) + 0.1 * Math.sin(t * 0.077);
+    const speed = w.wind * (0.85 + 0.2 * Math.sin(t * 0.033) + 0.12 * Math.sin(t * 0.13 + 1.3));
+    // 'from' is the bearing the wind blows from (0 = north); it blows toward the opposite.
+    G.uWind.value.set(-Math.sin(from) * speed, Math.cos(from) * speed);
+
+    const mf = this.month + (this.day - 1) / 30;
+    G.uYearPhase.value = (mf - 1) / 12;
+    seasonUniforms.uVeg.value.set(monthly(K.green, mf), monthly(K.joshuaBloom, mf), monthly(K.flowers, mf), monthly(K.monsoon, mf));
+    seasonUniforms.uDesert.value.set(monthly(K.bleach, mf), monthly(K.heat, mf), monthly(K.creosoteBloom, mf), monthly(K.dust, mf));
+    seasonUniforms.uSnowLine.value = monthly(K.snowLine, mf);
+    this.geese = monthly(K.geese, mf);
+    this.updateWeather(dt, w, mf);
+
+    this.exposure = this.computeExposure(sunAlt, G.uMoonScale.value, w.cloud);
+  }
+
+  /**
+   * Exposure under a thick deck: anchored to midday rain, and only partly
+   * adapting (power 0.6) so low-sun overcast stays dim and moody.
+   */
+  private deckExposure(sunAlt: number): number {
+    const sunY = Math.max(Math.sin(sunAlt * RAD), 0.02);
+    // Kasten-Young air mass → rough luminous transmittance of the clear air.
+    const alt = Math.max(sunAlt, 1.15);
+    const airMass = 1 / (Math.sin(alt * RAD) + 0.50572 * Math.pow(alt + 6.07995, -1.6364));
+    const T = Math.exp(-0.12 * airMass);
+    const deckT = THREE.MathUtils.lerp(0.3, 0.12, this.rain) + this.snowFall * 0.08;
+    const E = T * sunY * deckT * (1 + 0.8 * this.snowCover);
+    const ref = 0.84 * 0.95 * 0.183;
+    // Like a real meter, hold bright snowfields down toward mid-grey.
+    return 1.05 * (1 - 0.35 * this.rain) * (1 - 0.45 * this.snowCover) * Math.pow(ref / E, 0.6);
+  }
+
+  private computeExposure(sunAlt: number, moonScale: number, cloud: number): number {
+    const keys: [number, number][] = [
+      [-90, 900],
+      [-18, 900],
+      [-12, 160],
+      [-8, 30],
+      [-4, 4.5],
+      [0, 1.0],
+      [5, 0.42],
+      [12, 0.27],
+      [30, 0.2],
+      [90, 0.18],
+    ];
+    let e = keys[keys.length - 1][1];
+    for (let i = 0; i < keys.length - 1; i++) {
+      const [a0, e0] = keys[i];
+      const [a1, e1] = keys[i + 1];
+      if (sunAlt >= a0 && sunAlt <= a1) {
+        const t = (sunAlt - a0) / (a1 - a0);
+        e = Math.exp(Math.log(e0) + (Math.log(e1) - Math.log(e0)) * t);
+        break;
+      }
+    }
+    if (sunAlt < -10) e *= THREE.MathUtils.lerp(1.6, 0.55, Math.min(1, moonScale / 9e-5));
+    if (sunAlt > 0) e *= (1 + cloud * 0.9) * (1 - 0.2 * this.rain);
+    // Under a rain / snow deck the camera meters the deck's diffuse light
+    // instead (mirrors deckIrradiance() in the shaders).
+    const deck = THREE.MathUtils.smoothstep(Math.max(this.rain, this.snowFall), 0, 0.2);
+    if (deck > 0) e = THREE.MathUtils.lerp(e, Math.max(e, this.deckExposure(sunAlt)), deck);
+    return e;
+  }
+}
