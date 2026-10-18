@@ -29,10 +29,14 @@ uniform vec4 uVolcano;
 uniform float uCamWaterY;
 
 /** x: water surface height (m), y: channel mask (0 on dry land). */
+/**
+ * Lake Mohave runs off the north and east edges of the water grid; edge texels
+ * carry it on outward, where the far terrain's flat reservoir floor bounds it.
+ */
 vec2 waterAt(vec2 xz) {
   vec2 uv = xz / uWaterSize + 0.5;
-  if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) return vec2(-1000.0, 0.0);
-  return textureLod(uWaterTex, uv, 0.0).rg;
+  if (any(lessThan(uv, vec2(-0.5))) || any(greaterThan(uv, vec2(1.5)))) return vec2(-1000.0, 0.0);
+  return textureLod(uWaterTex, clamp(uv, vec2(0.0), vec2(1.0)), 0.0).rg;
 }
 
 /** Clear Colorado River water: red is gone within a few metres, blue-green carries far. */
