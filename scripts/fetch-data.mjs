@@ -16,11 +16,15 @@ import { flowAccumulation } from './lib/washes.mjs';
 const OUT = path.resolve('public/data');
 // Square zone around town where individual Joshua trees, yuccas and creosote are detected from z16 imagery.
 const TREE_ZONE = 16000;
+// Landcover stays on the original 50 km square around town.
+const LC_SIZE = 50000;
 
 export const REGIONS = {
   inner: { size: 22000, heightRes: 2048, heightZoom: 14, imageRes: 4096, imageZoom: 15 },
-  mid: { size: 50000, heightRes: 1024, heightZoom: 12, imageRes: 2048, imageZoom: 13 },
+  mid: { size: 92000, heightRes: 2048, heightZoom: 12, imageRes: 4096, imageZoom: 13 },
   far: { size: 400000, heightRes: 1024, heightZoom: 9, imageRes: 2048, imageZoom: 10 },
+  // The Laughlin casino strip and Bullhead City, down on the Colorado below Davis Dam.
+  laughlin: { size: 13000, cx: 30000, cz: 34700, heightRes: 2048, heightZoom: 14, imageRes: 4096, imageZoom: 16 },
 };
 
 // Heights are packed into 16 bits across the R and G channels of an 8-bit PNG.
@@ -29,14 +33,15 @@ export const HEIGHT_ENCODING = {
   inner: { offset: 0, scale: 24 },
   mid: { offset: 0, scale: 24 },
   far: { offset: 100, scale: 16 },
+  laughlin: { offset: 0, scale: 24 },
 };
 
-function forEachPixel(res, size, fn) {
+function forEachPixel(res, size, fn, cx = 0, cz = 0) {
   const step = size / res;
   for (let j = 0; j < res; j++) {
-    const z = -size / 2 + (j + 0.5) * step;
+    const z = cz - size / 2 + (j + 0.5) * step;
     for (let i = 0; i < res; i++) {
-      const x = -size / 2 + (i + 0.5) * step;
+      const x = cx - size / 2 + (i + 0.5) * step;
       fn(i, j, x, z);
     }
   }
@@ -46,7 +51,7 @@ async function buildHeight(name) {
   const r = REGIONS[name];
   const enc = HEIGHT_ENCODING[name];
   console.log(`height/${name}`);
-  const sample = await buildMosaic('terrarium', r.heightZoom, r.size * 1.02);
+  const sample = await buildMosaic('terrarium', r.heightZoom, r.size * 1.02, r.cx, r.cz);
   const raw = Buffer.alloc(r.heightRes * r.heightRes * 3);
   const tmp = [0];
   let min = Infinity;
@@ -60,7 +65,7 @@ async function buildHeight(name) {
     const o = (j * r.heightRes + i) * 3;
     raw[o] = v >> 8;
     raw[o + 1] = v & 255;
-  });
+  }, r.cx, r.cz);
   console.log(`  range ${min.toFixed(1)}m .. ${max.toFixed(1)}m`);
   await sharp(raw, { raw: { width: r.heightRes, height: r.heightRes, channels: 3 } })
     .png({ compressionLevel: 9 })
@@ -71,7 +76,7 @@ async function buildHeight(name) {
 async function buildImagery(name) {
   const r = REGIONS[name];
   console.log(`imagery/${name}`);
-  const sample = await buildMosaic('usgsImagery', r.imageZoom, r.size * 1.02);
+  const sample = await buildMosaic('usgsImagery', r.imageZoom, r.size * 1.02, r.cx, r.cz);
   const raw = Buffer.alloc(r.imageRes * r.imageRes * 3);
   const rgb = [0, 0, 0];
   forEachPixel(r.imageRes, r.size, (i, j, x, z) => {
@@ -80,7 +85,7 @@ async function buildImagery(name) {
     raw[o] = rgb[0];
     raw[o + 1] = rgb[1];
     raw[o + 2] = rgb[2];
-  });
+  }, r.cx, r.cz);
   await sharp(raw, { raw: { width: r.imageRes, height: r.imageRes, channels: 3 } })
     .jpeg({ quality: 88, mozjpeg: true })
     .toFile(path.join(OUT, `imagery_${name}.jpg`));
@@ -180,7 +185,7 @@ const steps = {
     for (const name of Object.keys(REGIONS)) await buildImagery(name);
   },
   async landcover() {
-    const { size } = REGIONS.mid;
+    const size = LC_SIZE;
     const res = 2048;
     console.log('landcover/mid');
     const height = await terrainSampler();
@@ -198,7 +203,7 @@ const steps = {
     await writeMeta({ landcover: { size, res, classes: LC } });
   },
   async derived() {
-    for (const name of ['inner', 'mid']) {
+    for (const name of ['inner', 'mid', 'laughlin']) {
       console.log(`ao/${name}`);
       const r = REGIONS[name];
       const file = path.join(OUT, `height_${name}.png`);
@@ -223,8 +228,8 @@ const steps = {
     const mask = await canopyMask(path.join(OUT, 'imagery_inner.jpg'), res, (i, j) => {
       const x = -inner / 2 + ((i + 0.5) / res) * inner;
       const z = -inner / 2 + ((j + 0.5) / res) * inner;
-      const li = Math.floor((x / REGIONS.mid.size + 0.5) * lcRes);
-      const lj = Math.floor((z / REGIONS.mid.size + 0.5) * lcRes);
+      const li = Math.floor((x / LC_SIZE + 0.5) * lcRes);
+      const lj = Math.floor((z / LC_SIZE + 0.5) * lcRes);
       return treeClasses.has(lc.data[(lj * lcRes + li) * lc.info.channels]);
     });
     await sharp(Buffer.from(mask), { raw: { width: res, height: res, channels: 1 } })
@@ -247,8 +252,8 @@ const steps = {
       absL: 70,
       minR: 1.4,
       allow: (x, z) => {
-        const li = Math.floor((x / REGIONS.mid.size + 0.5) * lcRes);
-        const lj = Math.floor((z / REGIONS.mid.size + 0.5) * lcRes);
+        const li = Math.floor((x / LC_SIZE + 0.5) * lcRes);
+        const lj = Math.floor((z / LC_SIZE + 0.5) * lcRes);
         return ok.has(lc.data[(lj * lcRes + li) * lc.info.channels]);
       },
     });

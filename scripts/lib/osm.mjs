@@ -96,6 +96,31 @@ function poiKind(t) {
   return '';
 }
 
+/** Joins a multipolygon's outer member ways end to end into closed rings. */
+function rings(members) {
+  const key = (g) => `${g.lat.toFixed(7)},${g.lon.toFixed(7)}`;
+  const open = members.filter((m) => m.type === 'way' && m.role !== 'inner' && m.geometry?.length > 1).map((m) => m.geometry.slice());
+  const out = [];
+  while (open.length) {
+    let ring = open.pop();
+    for (let grew = true; grew && key(ring[0]) !== key(ring[ring.length - 1]); ) {
+      grew = false;
+      const end = key(ring[ring.length - 1]);
+      for (let i = 0; i < open.length; i++) {
+        const w = open[i];
+        if (key(w[0]) === end) ring = ring.concat(w.slice(1));
+        else if (key(w[w.length - 1]) === end) ring = ring.concat(w.slice(0, -1).reverse());
+        else continue;
+        open.splice(i, 1);
+        grew = true;
+        break;
+      }
+    }
+    if (ring.length > 3) out.push(ring);
+  }
+  return out;
+}
+
 export async function buildOsm(size, cacheDir) {
   const b = regionBounds(size);
   const bbox = `${b.south},${b.west},${b.north},${b.east}`;
@@ -137,6 +162,31 @@ out geom;`,
   );
   json.elements.push(...extra.elements);
 
+  // The road down to the river and the Laughlin strip, Bullhead City and Davis Dam.
+  const wb = regionBounds(92000);
+  const wbox = `${wb.south},${wb.west},${wb.north},${wb.east}`;
+  const lb = regionBounds(13000, 30000, 34700);
+  const lbox = `${lb.south},${lb.west},${lb.north},${lb.east}`;
+  const river = await overpass(
+    `[out:json][timeout:300];
+(
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary)(_link)?$"](${wbox});
+  node["place"~"^(city|town|village|hamlet)$"](${wbox});
+  node["natural"="peak"](${wbox});
+  way["highway"~"^(unclassified|residential|living_street|service)$"]["service"!~"^(parking_aisle|driveway|drive-through)$"](${lbox});
+  way["building"](${lbox});
+  way["natural"="water"](${lbox});
+  relation["natural"="water"](${lbox});
+  way["power"="line"](${lbox});
+  nwr["amenity"~"^(fuel|fast_food|restaurant|casino|cafe|bar|post_office)$"](${lbox});
+  nwr["tourism"~"^(motel|hotel|museum|viewpoint|attraction|information)$"](${lbox});
+  nwr["leisure"~"^(park|marina|slipway)$"](${lbox});
+);
+out geom;`,
+    path.join(cacheDir, 'osm_laughlin.json'),
+  );
+  json.elements.push(...river.elements);
+
   const out = { roads: [], waterways: [], waterAreas: [], buildings: [], power: [], peaks: [], places: [], masts: [], cemeteries: [], pois: [] };
   const seen = new Set();
   for (const e of json.elements) {
@@ -167,6 +217,10 @@ out geom;`,
       if (t.natural === 'peak') out.peaks.push({ ...item, ele: Number(t.ele) || null });
       else if (t.place) out.places.push({ ...item, kind: t.place });
       else if (t.man_made) out.masts.push({ ...item, height: Number(t.height) || null });
+      continue;
+    }
+    if (e.type === 'relation') {
+      if (t.natural === 'water') for (const ring of rings(e.members || [])) out.waterAreas.push({ name: t.name || '', pts: toLine(ring) });
       continue;
     }
     if (!e.geometry) continue;
