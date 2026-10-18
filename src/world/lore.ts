@@ -38,6 +38,10 @@ const SITES = {
   cove: { x: 21146, z: -2930 },
   christmasTree: { x: 15856, z: 22677 },
   calNevAri: { x: 3649, z: 18280 },
+  riverside: { x: 31585, z: 33015 },
+  belle: { x: 31540, z: 34092 },
+  riverRick: { x: 31458, z: 34310 },
+  davisDam: { x: 31600, z: 29600 },
 };
 
 /**
@@ -144,6 +148,46 @@ export class Lore {
         title: 'The Colorado, held back',
         text: 'Davis Dam closed in 1951 and backed the Colorado River up 67 miles through Black Canyon and Eldorado Canyon. The water comes out of the bottom of Lake Mead, so it runs cold and clear, perfect for striped bass and rainbow trout.',
         test: onWater(/mohave/i),
+      },
+      {
+        id: 'laughlin',
+        kind: 'lore',
+        kicker: 'Laughlin · founded 1966',
+        title: 'Don Laughlin’s bait shop',
+        text: 'In 1966 a Minnesota slot-machine operator named Don Laughlin bought a shuttered bait shop and eight motel rooms on this bend of the Colorado. The postal service named the town after him. Today a row of casinos lines the river, and the Riverwalk runs along the water beneath them.',
+        test: near(SITES.riverside, 1400, 200),
+      },
+      {
+        id: 'riverside',
+        kind: 'lore',
+        kicker: 'Don Laughlin’s Riverside',
+        title: 'Where it started',
+        text: 'The Riverside grew from that bait shop into two towers, a bowling alley, a movie theatre and a showroom of Don’s classic cars. He lived in the penthouse until he died in 2023, and built the Laughlin Bridge to Arizona with his own money in 1987.',
+        test: near(SITES.riverside, 200, 120),
+      },
+      {
+        id: 'colorado-belle',
+        kind: 'lore',
+        kicker: 'Colorado Belle',
+        title: 'A riverboat that never sailed',
+        text: 'A 600-foot Mississippi paddlewheeler built from concrete and steel in 1987, moored in its own moat with four black smokestacks. It closed in March 2020 and has sat dark on the river ever since.',
+        test: near(SITES.belle, 180, 100),
+      },
+      {
+        id: 'river-rick',
+        kind: 'lore',
+        kicker: 'The Pioneer',
+        title: 'River Rick',
+        text: 'The neon cowboy outside the Pioneer is Laughlin’s answer to Vegas Vic, tipping his hat to Casino Drive from the old western-themed casino.',
+        test: near(SITES.riverRick, 120, 80),
+      },
+      {
+        id: 'davis-dam',
+        kind: 'lore',
+        kicker: 'Davis Dam · 1951',
+        title: 'The cork in Lake Mohave',
+        text: 'A rock-and-earth dam 200 feet high across Pyramid Canyon. Its powerplant on the Arizona side feeds the Southwest grid, and the cold water it releases from the bottom of the lake makes the Colorado below Laughlin famous for trout.',
+        test: near(SITES.davisDam, 600, 200),
       },
       {
         id: 'cottonwood-cove',
