@@ -231,7 +231,7 @@ void main() {
     float hue = dot(n, V);
     vec3 iri = mix(vec3(0.18, 0.22, 0.75), vec3(0.45, 0.16, 0.7), hue);
     vec3 sun = sunRadiance(vWorld.y) * shadow * max(uSunDir.y + 0.1, 0.0);
-    col += uPat3.w * iri * (spec * sun * 0.25 + fres * skyAmbient(n, 1.0) * 0.12);
+    col += uPat3.w * iri * (spec * sun * 0.12 + fres * skyAmbient(n, 1.0) * 0.035);
     float flash = gorget * pow(max(hue, 0.0), 3.0);
     col += flash * cSkin * 4.0 * (sun * 0.08 + skyAmbient(n, 1.0) * 0.4);
   }
