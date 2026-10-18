@@ -1,0 +1,43 @@
+:root {
+  --ink: #f6eee3;
+  --ink-dim: rgba(246, 238, 227, 0.62);
+  --glass: rgba(20, 16, 22, 0.42);
+  --glass-strong: rgba(18, 14, 20, 0.74);
+  --line: rgba(255, 255, 255, 0.14);
+  --accent: #ff9e5a;
+  --neon: #ff5c8a;
+  --lake: #5fd3c6;
+  --display: 'Rye', 'Lora', Georgia, serif;
+  --serif: 'Lora', Georgia, serif;
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+}
+
+#ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
