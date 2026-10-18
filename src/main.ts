@@ -24,6 +24,7 @@ import { Landmarks } from './world/landmarks';
 import { PowerLines } from './world/powerLines';
 import { LightPoints } from './render/lightPoints';
 import { Traffic } from './life/traffic';
+import { Wildlife } from './life/wildlife';
 import { ShadowMap } from './render/shadows';
 import { Roads } from './world/roads';
 import { RoadIndex } from './world/roadIndex';
@@ -98,6 +99,8 @@ async function boot() {
   engine.scene.add(props.group, landmarks.group, lights.points, power.mesh);
   const traffic = new Traffic(world.osm, heightfield);
   engine.scene.add(traffic.group);
+  const wildlife = new Wildlife(heightfield);
+  engine.scene.add(wildlife.group);
 
   const air = new AirField(heightfield);
   const species = speciesById(settings.bird) ?? SPECIES[0];
@@ -111,6 +114,7 @@ async function boot() {
   trees.addShadowCasters(shadow);
   props.addShadowCasters(shadow);
   landmarks.addShadowCasters(shadow);
+  wildlife.addShadowCasters(shadow);
   player.shadowCaster = shadow.addCaster(player.model.geometry, createBirdShadowMaterial(), player.object);
 
   const cam = engine.camera;
@@ -198,6 +202,7 @@ async function boot() {
     power.resize(cam, window.innerHeight * engine.pixelRatio);
     traffic.lights.resize(cam, window.innerHeight * engine.pixelRatio);
     traffic.update(dt, cam.position, G.uNight.value, Math.max(G.uNight.value, G.uFogDensity.value > 0.003 ? 0.35 : 0), 1 - 0.2 * G.uWet.value - 0.35 * G.uSnowCover.value);
+    wildlife.update(dt, cam.position, free ? cam.position : player.object.position);
     shadow.update(engine.renderer, free ? cam.position : player.object.position);
     G.uInvExposure.value = 1 / env.exposure;
     sky.update(cam, env.exposure);
@@ -225,6 +230,7 @@ async function boot() {
     lights,
     power,
     traffic,
+    wildlife,
     roads,
     roadIndex,
     G,
