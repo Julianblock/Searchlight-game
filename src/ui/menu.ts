@@ -50,7 +50,7 @@ export class Menu {
   constructor(private s: GameSettings) {
     const panel = el('div', 'panel');
     panel.append(
-      el('div', 'eyebrow', 'Searchlight · Nevada · Pop. 445'),
+      el('div', 'eyebrow', 'Searchlight · Nevada · Elev. 3,540 ft'),
       el('div', 'title', 'Wings over the <em>Mojave</em>'),
       el(
         'p',
