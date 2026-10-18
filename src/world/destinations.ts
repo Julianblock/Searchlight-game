@@ -38,6 +38,22 @@ export const DESTINATIONS: Destination[] = [
     label: 'Christmas Tree Pass',
     blurb: 'A rough dirt pass below Spirit Mountain, past Grapevine Canyon\'s petroglyphs and junipers hung with ornaments.',
   },
+  {
+    id: 'to-laughlin',
+    label: 'Down to Laughlin',
+    blurb: 'NV-163 drops off the Newberry Mountains toward the Colorado River, the casino towers rising out of the haze at the bottom of the grade.',
+  },
+  {
+    id: 'casinodrive',
+    label: 'Laughlin: Casino Drive',
+    blurb: "The strip on the river: the Riverside's red R, the Aquarius, the Edgewater, the old Colorado Belle riverboat, the Tropicana, River Rick at the Pioneer and Harrah's.",
+  },
+  {
+    id: 'riverwalk',
+    label: 'Laughlin Riverwalk',
+    blurb: 'The white rail, palms and lamps along the Colorado, with water taxis crossing to Bullhead City. Come back after dark to watch the towers glow in the river.',
+  },
+  { id: 'davisdam', label: 'Davis Dam', blurb: 'The dam holding back Lake Mohave, with the whole Laughlin strip strung out down the river below.' },
 ];
 
 const ROAD_ANCHORS: Record<string, [string, number, number]> = {
@@ -49,6 +65,8 @@ const ROAD_ANCHORS: Record<string, [string, number, number]> = {
   walkingbox: ['Walking Box Ranch Road', -10700, -3700],
   calnevari: ['Veterans Memorial Highway', 3500, 17600],
   christmastree: ['Christmas Tree Pass Road', 15856, 22676],
+  'to-laughlin': ['Colorado River Highway', 23600, 29700],
+  casinodrive: ['South Casino Drive', 31480, 33060],
 };
 
 /** Where each anchored drive should face: toward this point. */
@@ -61,11 +79,15 @@ const FACING: Record<string, [number, number]> = {
   walkingbox: [-15000, 9000],
   calnevari: [3600, 25000],
   christmastree: [22000, 23000],
+  'to-laughlin': [31600, 32500],
+  casinodrive: [31300, 34000],
 };
 
 /** Off-road lookouts: position and the point to face. */
 const LOOKOUTS: Record<string, [number, number, number, number]> = {
   overlook: [-200, 660, -120, -1500],
+  riverwalk: [31612, 33240, 31420, 34700],
+  davisdam: [31500, 29700, 31450, 33500],
 };
 
 export interface Spot {
