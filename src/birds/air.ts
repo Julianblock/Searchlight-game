@@ -1,0 +1,111 @@
+import type { Heightfield } from '../world/heightfield';
+import { LC } from '../world/meta';
+
+const CELL = 720;
+const CYCLE = 540; // seconds a thermal lives before the cell re-seeds
+
+function hash(x: number, y: number, s = 0): number {
+  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 2147483647);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+export interface Thermal {
+  x: number;
+  z: number;
+  radius: number;
+  strength: number;
+  top: number;
+}
+
+/**
+ * Rising air: drifting thermal columns over sun-heated ground and ridge lift
+ * where the wind meets the Highland Range and the Newberry Mountains.
+ */
+export class AirField {
+  sun = 1; // 0..1 thermal-generating insolation
+  rain = 0; // rainfall 0..1: cooled downdrafts, storm turbulence, soggy feathers
+  snow = 0;
+  windX = 3;
+  windZ = -2;
+  thermalTop = 3200;
+  time = 0;
+  lastThermal = 0;
+  lastRidge = 0;
+  private n = { x: 0, y: 1, z: 0 };
+
+  constructor(private hf: Heightfield) {}
+
+  /** Thermal in a grid cell (or null). Deterministic for a given time. */
+  thermalAt(ci: number, cj: number, out: Thermal): Thermal | null {
+    const epoch = Math.floor((this.time + hash(ci, cj, 7) * CYCLE) / CYCLE);
+    const h0 = hash(ci, cj, epoch);
+    if (h0 < 0.42) return null;
+    const life = ((this.time + hash(ci, cj, 7) * CYCLE) % CYCLE) / CYCLE;
+    const env = Math.sin(Math.PI * life);
+    const bx = (ci + 0.2 + 0.6 * hash(ci, cj, epoch + 11)) * CELL;
+    const bz = (cj + 0.2 + 0.6 * hash(ci, cj, epoch + 23)) * CELL;
+    const drift = life * CYCLE * 0.35;
+    out.x = bx + this.windX * drift;
+    out.z = bz + this.windZ * drift;
+    const lc = this.hf.landcover(bx, bz);
+    let surf = 1;
+    if (lc === LC.WATER || lc === LC.WETLAND) surf = 0.12;
+    else if (lc === LC.FARM || lc === LC.PINYON) surf = 0.7;
+    else if (lc === LC.ROCK || lc === LC.WASH || (lc >= LC.URBAN_OPEN && lc <= LC.URBAN_HIGH)) surf = 1.35;
+    // Desert thermals are wide and violent.
+    out.radius = 70 + 140 * hash(ci, cj, epoch + 5);
+    out.strength = (1.8 + 4.0 * hash(ci, cj, epoch + 3)) * env * surf * this.sun;
+    out.top = this.thermalTop * (0.75 + 0.5 * hash(ci, cj, epoch + 9));
+    return out.strength > 0.05 ? out : null;
+  }
+
+  private th: Thermal = { x: 0, z: 0, radius: 0, strength: 0, top: 0 };
+
+  /** Vertical air velocity (m/s) at a world position. */
+  lift(x: number, y: number, z: number): number {
+    const ground = this.hf.height(x, z);
+    const agl = y - ground;
+    let w = 0;
+    if (this.sun > 0.02) {
+      const ci = Math.floor(x / CELL);
+      const cj = Math.floor(z / CELL);
+      for (let dj = -1; dj <= 1; dj++) {
+        for (let di = -1; di <= 1; di++) {
+          const t = this.thermalAt(ci + di, cj + dj, this.th);
+          if (!t) continue;
+          const dx = x - t.x;
+          const dz = z - t.z;
+          const r2 = (dx * dx + dz * dz) / (t.radius * t.radius);
+          if (r2 > 16) continue;
+          // Core updraft ringed by gentle sink.
+          const prof = Math.exp(-r2) - 0.18 * Math.exp(-r2 / 6);
+          const vert = Math.min(1, Math.max(0, agl / 50)) * (1 - smoothstep(t.top - 250, t.top, y));
+          w += t.strength * prof * vert;
+        }
+      }
+      // Broad weak sink between thermals on sunny days.
+      w -= 0.25 * this.sun;
+    }
+    // Ridge (orographic) lift: wind blowing up the slope.
+    this.hf.normal(x, z, this.n, 12);
+    const slopeUp = -(this.n.x * this.windX + this.n.z * this.windZ) / Math.max(this.n.y, 0.2);
+    const ridge = slopeUp * Math.exp(-Math.max(agl, 0) / 180);
+    // Showers drag cold air down with them; storms churn it.
+    if (this.rain > 0.01) {
+      const t = this.time;
+      const cell = 0.5 + 0.5 * Math.sin(x * 0.0021 + t * 0.05) * Math.sin(z * 0.0017 - t * 0.04);
+      w -= this.rain * (0.3 + 1.2 * cell);
+      const gusty = this.rain * 1.3 + Math.hypot(this.windX, this.windZ) * 0.06;
+      w += gusty * (Math.sin(x * 0.013 + t * 0.9) * Math.sin(z * 0.011 - t * 0.7) + 0.5 * Math.sin((x + z) * 0.031 + t * 2.3) + 0.3 * Math.sin(y * 0.05 + t * 3.7));
+    }
+    this.lastThermal = w;
+    this.lastRidge = ridge;
+    return w + ridge;
+  }
+}
+
+function smoothstep(e0: number, e1: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+  return t * t * (3 - 2 * t);
+}
