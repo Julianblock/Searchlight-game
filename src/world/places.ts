@@ -22,6 +22,9 @@ const AREAS: Area[] = [
   { name: 'Lake Mohave', x: 23550, z: 1700, r: 4600, note: 'Colorado River backed up behind Davis Dam' },
   { name: 'Eldorado Canyon', x: 19900, z: -26000, r: 2600, note: 'Old Nelson mining camp on the river' },
   { name: 'Searchlight Mining District', x: 900, z: -1400, r: 1300, note: 'Headframes and tailings of the 1897 gold rush' },
+  { name: 'Laughlin', x: 31300, z: 34000, r: 2300, note: 'Casino row on the Colorado River' },
+  { name: 'Davis Dam', x: 31600, z: 29620, r: 700, note: 'Holding back Lake Mohave since 1951' },
+  { name: 'Bullhead City', x: 35100, z: 34000, r: 3300, note: 'Arizona, across the river from the casinos' },
 ];
 
 const HIDDEN_ROADS = new Set([
@@ -44,12 +47,16 @@ const HIDDEN_ROADS = new Set([
   'Empire Wash Road',
   'Quartette Road',
   'Cemetery Access Road',
+  'Colorado River Highway',
+  'South Casino Drive',
 ]);
 
 const ROAD_LABEL: Record<string, string> = {
   'Veterans Memorial Highway': 'US-95 \u00b7 Veterans Memorial Highway',
   'Joshua Tree Highway': 'SR-164 \u00b7 Joshua Tree Highway',
   'Cottonwood Cove Road': 'SR-164 \u00b7 Cottonwood Cove Road',
+  'Colorado River Highway': 'NV-163 \u00b7 Colorado River Highway',
+  'South Casino Drive': 'Casino Drive \u00b7 the Laughlin strip',
 };
 
 const POI_KIND: Record<string, string> = {
