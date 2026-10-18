@@ -216,10 +216,12 @@ void main() {
   // Gravel and pebbles underfoot: varnished dark stones and pale quartz.
   float pebbleFade = smoothstep(0.12, 0.03, fp) * (1.0 - wash * 0.7) * (1.0 - waterFrac);
   if (pebbleFade > 0.0) {
-    vec2 pb = pebbles(ROT * xz / 0.09);
-    float stone = smoothstep(1.0, 0.75, pb.x) * step(0.35 + 0.4 * (1.0 - pave), pb.y);
-    vec3 stoneCol = pb.y > 0.93 ? vec3(0.62, 0.58, 0.52) : mix(vec3(0.10, 0.08, 0.07), vec3(0.30, 0.22, 0.16), fract(pb.y * 7.0));
-    alb = mix(alb, stoneCol, stone * pebbleFade * 0.8);
+    vec2 pb = pebbles(ROT * xz / 0.055);
+    float stone = smoothstep(1.0, 0.8, pb.x) * step(0.55 + 0.35 * (1.0 - pave), pb.y);
+    // Relative to the soil so stones never out-shine the ground they sit on.
+    vec3 varnish = alb * vec3(0.62, 0.56, 0.52) * mix(0.7, 1.1, fract(pb.y * 7.0));
+    vec3 stoneCol = pb.y > 0.985 ? alb * 1.25 : varnish;
+    alb = mix(alb, stoneCol, stone * pebbleFade * 0.6);
   }
   float h0 = vnoise(q1 / 3.7) + 0.5 * vnoise(q2 / 1.4);
   float hx = vnoise((q1 + vec2(0.5, 0.0)) / 3.7) + 0.5 * vnoise((q2 + vec2(0.5, 0.0)) / 1.4);
