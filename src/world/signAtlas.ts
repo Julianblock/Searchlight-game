@@ -413,8 +413,11 @@ const SIGNS: SignSpec[] = [
   },
 ];
 
-/** Paints every storefront and highway sign into one texture atlas. */
+let cached: { texture: THREE.Texture; rects: Record<string, SignRect> } | null = null;
+
+/** Paints every storefront and highway sign into one texture atlas (built once, shared). */
 export function buildSignAtlas(): { texture: THREE.Texture; rects: Record<string, SignRect> } {
+  if (cached) return cached;
   // Shelf packing with a small gutter so mip levels don't bleed between signs.
   const pad = 8;
   let x = pad;
@@ -460,5 +463,6 @@ export function buildSignAtlas(): { texture: THREE.Texture; rects: Record<string
   texture.anisotropy = 8;
   texture.generateMipmaps = true;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
-  return { texture, rects };
+  cached = { texture, rects };
+  return cached;
 }
