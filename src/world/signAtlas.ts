@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { LAUGHLIN_SIGNS } from './laughlinSigns';
 import { BLACK, dotMatrix, fitText, neon, rounded, SANS, SCRIPT, SERIF, type SignSpec } from './signKit';
 
 /** Atlas rectangle in UV space plus the number of stacked animation frames. */
@@ -419,7 +420,7 @@ export function buildSignAtlas(): { texture: THREE.Texture; rects: Record<string
   let x = pad;
   let y = pad;
   let shelf = 0;
-  const sorted = [...SIGNS].sort((a, b) => b.h * (b.frames ?? 1) - a.h * (a.frames ?? 1));
+  const sorted = [...SIGNS, ...LAUGHLIN_SIGNS].sort((a, b) => b.h * (b.frames ?? 1) - a.h * (a.frames ?? 1));
   const placed: { s: SignSpec; x: number; y: number }[] = [];
   for (const s of sorted) {
     const th = s.h * (s.frames ?? 1);
