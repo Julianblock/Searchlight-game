@@ -103,7 +103,7 @@ function limb(b: GeoBuilder, from: THREE.Vector3, to: THREE.Vector3, r0: number,
   cyl.translate(0, len / 2, 0);
   const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
   const m = new THREE.Matrix4().compose(from, q, new THREE.Vector3(1, 1, 1));
-  b.addMesh(cyl.toNonIndexed(), m, from.clone().lerp(to, 0.5), part);
+  b.addMesh(cyl, m, from.clone().lerp(to, 0.5), part);
 }
 
 /** Leaf-cluster crown on the outer shell of an ellipsoid. */
@@ -163,21 +163,21 @@ export function buildLeafy(form: LeafyForm, detail: 0 | 1 | 2, seed = 1): THREE.
 
   if (form === 'creosote') {
     // Many slender grey stems fanning up from the root crown.
-    const stems = detail === 0 ? 14 : 6;
+    const stems = detail === 0 ? 16 : 6;
     const tip = new THREE.IcosahedronGeometry(1, detail === 0 ? 1 : 0);
     for (let i = 0; i < stems; i++) {
       const a = (i / stems) * Math.PI * 2 + r() * 0.6;
       const lean = 0.35 + r() * 0.5;
       const top = new THREE.Vector3(Math.cos(a) * lean, 0.75 + r() * 0.25, Math.sin(a) * lean);
-      if (detail === 0) limb(b, new THREE.Vector3(Math.cos(a) * 0.04, 0, Math.sin(a) * 0.04), top, 0.03, 0.012, 3);
+      if (detail === 0) limb(b, new THREE.Vector3(Math.cos(a) * 0.04, 0, Math.sin(a) * 0.04), top, 0.022, 0.008, 3);
       // Sparse leaf clumps along the upper half of each stem.
-      const nClump = detail === 0 ? 4 : 2;
+      const nClump = detail === 0 ? 6 : 2;
       for (let k = 0; k < nClump; k++) {
         const t = 0.5 + (k / nClump) * 0.55 + r() * 0.1;
         const c = top.clone().multiplyScalar(Math.min(t, 1.05));
         c.x += (r() - 0.5) * 0.15;
         c.z += (r() - 0.5) * 0.15;
-        const cr = (detail === 0 ? 0.13 : 0.26) * (0.7 + 0.6 * r());
+        const cr = (detail === 0 ? 0.095 : 0.24) * (0.7 + 0.6 * r());
         const m = new THREE.Matrix4().compose(c, new THREE.Quaternion().setFromEuler(new THREE.Euler(r() * 3, r() * 3, r() * 3)), new THREE.Vector3(cr, cr * 0.85, cr));
         b.addMesh(tip, m, c, TREE_PART.LEAF);
       }
@@ -250,7 +250,7 @@ function blade(b: GeoBuilder, base: THREE.Vector3, dir: THREE.Vector3, len: numb
 }
 
 /** A ball of stiff dagger leaves at the end of a branch. */
-function rosette(b: GeoBuilder, r: () => number, at: THREE.Vector3, axis: THREE.Vector3, size: number, detail: 0 | 1, opts: { n?: number; width?: number; dead?: boolean } = {}) {
+function rosette(b: GeoBuilder, r: () => number, at: THREE.Vector3, axis: THREE.Vector3, size: number, detail: 0 | 1, opts: { n?: number; width?: number; dead?: boolean; droop?: number } = {}) {
   const n = opts.n ?? (detail === 0 ? 26 : 9);
   const width = opts.width ?? size * 0.09;
   const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis.clone().normalize());
@@ -262,7 +262,7 @@ function rosette(b: GeoBuilder, r: () => number, at: THREE.Vector3, axis: THREE.
     const a = i * 2.39996 + r() * 0.3;
     const d = new THREE.Vector3(Math.cos(a) * rad, y, Math.sin(a) * rad).applyQuaternion(q).normalize();
     const len = size * (0.75 + 0.35 * r()) * (y < -0.2 ? 0.85 : 1);
-    blade(b, at, d, len, width, at, TREE_PART.BLADE, y < 0 ? 0.15 : 0.05);
+    blade(b, at, d, len, width, at, TREE_PART.BLADE, (y < 0 ? 0.15 : 0.05) * (opts.droop ?? 1));
   }
   if (detail === 0) {
     const core = new THREE.IcosahedronGeometry(1, 0);
@@ -275,7 +275,7 @@ function rosette(b: GeoBuilder, r: () => number, at: THREE.Vector3, axis: THREE.
     const cone = new THREE.CylinderGeometry(size * 0.16, size * 0.3, skirtLen, detail === 0 ? 7 : 4, 1, true);
     cone.translate(0, -skirtLen / 2 - size * 0.05, 0);
     const m = new THREE.Matrix4().compose(at, q, new THREE.Vector3(1, 1, 1));
-    b.addMesh(cone.toNonIndexed(), m, at, TREE_PART.THATCH);
+    b.addMesh(cone, m, at, TREE_PART.THATCH);
   }
 }
 
@@ -293,13 +293,13 @@ export function buildRosette(form: RosetteForm, detail: 0 | 1 | 2, seed = 1): TH
   if (form === 'joshua') {
     const trunkH = 0.32 + r() * 0.16;
     const trunkTop = new THREE.Vector3((r() - 0.5) * 0.06, trunkH, (r() - 0.5) * 0.06);
-    limb(b, new THREE.Vector3(0, -0.05, 0), trunkTop, 0.055, 0.042, sides, TREE_PART.THATCH);
+    limb(b, new THREE.Vector3(0, -0.05, 0), trunkTop, 0.06, 0.05, sides, TREE_PART.THATCH);
     const tips: { p: THREE.Vector3; d: THREE.Vector3 }[] = [];
     const grow = (from: THREE.Vector3, dir: THREE.Vector3, len: number, rad: number, depth: number) => {
       const to = from.clone().addScaledVector(dir, len);
       to.y = Math.min(to.y, 0.95);
       limb(b, from, to, rad, rad * 0.82, sides, TREE_PART.THATCH);
-      const forks = depth <= 0 ? 0 : r() < 0.25 ? 1 : r() < 0.75 ? 2 : 3;
+      const forks = depth <= 0 ? 0 : r() < 0.15 ? 1 : r() < 0.7 ? 2 : 3;
       if (forks === 0 || to.y > 0.86) {
         tips.push({ p: to, d: dir });
         return;
@@ -309,28 +309,28 @@ export function buildRosette(form: RosetteForm, detail: 0 | 1 | 2, seed = 1): TH
         const out = 0.45 + r() * 0.45;
         // Arms bend out and then turn skyward, the classic Joshua candelabra.
         const nd = new THREE.Vector3(Math.cos(az) * out, 0.55 + r() * 0.5, Math.sin(az) * out).normalize();
-        grow(to, nd, len * (0.7 + r() * 0.35), rad * 0.78, depth - 1);
+        grow(to, nd, len * (0.75 + r() * 0.3), rad * 0.8, depth - 1);
       }
     };
     const first = r() < 0.2 ? 1 : 2 + Math.floor(r() * 2);
     for (let k = 0; k < first; k++) {
       const az = (k / first) * Math.PI * 2 + r() * 1.2;
       const out = 0.5 + r() * 0.5;
-      grow(trunkTop, new THREE.Vector3(Math.cos(az) * out, 0.6 + r() * 0.4, Math.sin(az) * out).normalize(), 0.16 + r() * 0.08, 0.036, 2 + (r() < 0.4 ? 1 : 0));
+      grow(trunkTop, new THREE.Vector3(Math.cos(az) * out, 0.6 + r() * 0.4, Math.sin(az) * out).normalize(), 0.11 + r() * 0.06, 0.042, 3 + (r() < 0.4 ? 1 : 0));
     }
     for (const t of tips) {
-      const size = 0.085 + r() * 0.03;
+      const size = 0.075 + r() * 0.03;
       if (detail === 2) {
         const ico = new THREE.IcosahedronGeometry(1, 0);
         b.addMesh(ico, new THREE.Matrix4().compose(t.p, new THREE.Quaternion(), new THREE.Vector3(size, size, size)), t.p, TREE_PART.BLADE);
         continue;
       }
-      rosette(b, r, t.p, new THREE.Vector3(t.d.x * 0.4, 1, t.d.z * 0.4), size, d01);
+      rosette(b, r, t.p, new THREE.Vector3(t.d.x * 0.4, 1, t.d.z * 0.4), size, d01, { n: detail === 0 ? 40 : 12, width: size * 0.13 });
       // Cream panicle of waxy blossoms rising from the rosette (spring only).
-      if (detail === 0 && r() < 0.7) {
+      if (detail === 0 && r() < 0.45) {
         const fp = t.p.clone().add(new THREE.Vector3(0, size * 0.9, 0));
         const fl = new THREE.IcosahedronGeometry(1, 1);
-        b.addMesh(fl, new THREE.Matrix4().compose(fp, new THREE.Quaternion(), new THREE.Vector3(size * 0.32, size * 0.55, size * 0.32)), t.p, TREE_PART.FLOWER, (p) => {
+        b.addMesh(fl, new THREE.Matrix4().compose(fp, new THREE.Quaternion(), new THREE.Vector3(size * 0.18, size * 0.36, size * 0.18)), t.p, TREE_PART.FLOWER, (p) => {
           p.multiplyScalar(1 + 0.25 * Math.sin(p.x * 9) * Math.sin(p.y * 7) * Math.sin(p.z * 8));
         });
       }
@@ -348,13 +348,13 @@ export function buildRosette(form: RosetteForm, detail: 0 | 1 | 2, seed = 1): TH
       const h = s === 0 ? 0.62 + r() * 0.2 : 0.3 + r() * 0.4;
       const top = new THREE.Vector3(Math.cos(a) * lean, h, Math.sin(a) * lean);
       const base = new THREE.Vector3(Math.cos(a) * 0.03, -0.05, Math.sin(a) * 0.03);
-      limb(b, base, top, 0.06, 0.05, sides, TREE_PART.THATCH);
+      limb(b, base, top, 0.05, 0.042, sides, TREE_PART.THATCH);
       if (detail === 2) {
         const ico = new THREE.IcosahedronGeometry(1, 0);
         b.addMesh(ico, new THREE.Matrix4().compose(top, new THREE.Quaternion(), new THREE.Vector3(0.22, 0.2, 0.22)), top, TREE_PART.BLADE);
         continue;
       }
-      rosette(b, r, top, new THREE.Vector3(top.x, 1, top.z), 0.3, d01, { n: detail === 0 ? 30 : 10, width: 0.035 });
+      rosette(b, r, top, new THREE.Vector3(top.x, 1, top.z), 0.26, d01, { n: detail === 0 ? 46 : 14, width: 0.032, droop: 0 });
       if (detail === 0 && s === 0 && r() < 0.6) {
         const fp = top.clone().add(new THREE.Vector3(0, 0.3, 0));
         const fl = new THREE.IcosahedronGeometry(1, 1);
@@ -371,7 +371,7 @@ export function buildRosette(form: RosetteForm, detail: 0 | 1 | 2, seed = 1): TH
     limb(b, new THREE.Vector3(0, -0.05, 0), top, 0.04, 0.032, sides + 2);
     const skirt = new THREE.CylinderGeometry(0.06, 0.085, 0.3, detail === 0 ? 10 : 6, 1, true);
     skirt.translate(0, top.y - 0.17, 0);
-    b.addMesh(skirt.toNonIndexed(), new THREE.Matrix4(), top, TREE_PART.THATCH);
+    b.addMesh(skirt, new THREE.Matrix4(), top, TREE_PART.THATCH);
     const fronds = detail === 0 ? 18 : detail === 1 ? 9 : 6;
     for (let i = 0; i < fronds; i++) {
       const a = i * 2.39996;
