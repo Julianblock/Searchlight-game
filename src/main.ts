@@ -21,6 +21,7 @@ import { Trees } from './veg/trees';
 import { ShadowMap } from './render/shadows';
 import { Props } from './world/props';
 import { Landmarks } from './world/landmarks';
+import { Laughlin } from './world/laughlin';
 import { PowerLines } from './world/powerLines';
 import { Grass } from './veg/grass';
 import { WindParticles } from './life/windParticles';
@@ -127,9 +128,10 @@ async function boot() {
   loading.progress('Lighting up Terrible\'s and the McDonald\'s sign', 0.97);
   const power = new PowerLines(world.osm, heightfield);
   const landmarks = new Landmarks(world.osm, heightfield);
-  const props = new Props(world.osm, heightfield, power.pylons, (x, z) => landmarks.occupies(x, z));
-  const lights = new LightPoints([...props.lights, ...landmarks.lights]);
-  engine.scene.add(props.group, landmarks.group, lights.points, power.mesh);
+  const laughlin = new Laughlin(heightfield);
+  const props = new Props(world.osm, heightfield, power.pylons, (x, z) => landmarks.occupies(x, z) || laughlin.occupies(x, z));
+  const lights = new LightPoints([...props.lights, ...landmarks.lights, ...laughlin.lights]);
+  engine.scene.add(props.group, landmarks.group, laughlin.group, lights.points, power.mesh);
   const cemeteries = new Cemeteries(cemeteryPlans, heightfield);
   engine.scene.add(cemeteries.group);
   const roads = new Roads(world.osm, heightfield);
@@ -176,6 +178,7 @@ async function boot() {
   trees.addShadowCasters(shadow);
   props.addShadowCasters(shadow);
   landmarks.addShadowCasters(shadow);
+  laughlin.addShadowCasters(shadow);
   cemeteries.addShadowCasters(shadow);
   wildlife.addShadowCasters(shadow);
   player.shadowCaster = shadow.addCaster(player.model.geometry, createBirdShadowMaterial(), player.object);
@@ -676,7 +679,7 @@ async function boot() {
   frame();
   loading.done();
   Object.assign(window, {
-    touch, engine, env, terrain, water, waterSurface, fish, ghosts, volcano, journal, lore, heightfield, G, player, chase, air, car, driveCam, roadIndex, fences, dust, drive, shadow, precip, cemeteries, cemeteryPlans, controls, menu, hud, places, trees, props, landmarks, lights, traffic, wildlife, flocks, sound, power, grass, roads, motes,
+    touch, engine, env, terrain, water, waterSurface, fish, ghosts, volcano, journal, lore, heightfield, G, player, chase, air, car, driveCam, roadIndex, fences, dust, drive, shadow, precip, cemeteries, cemeteryPlans, controls, menu, hud, places, trees, props, landmarks, laughlin, lights, traffic, wildlife, flocks, sound, power, grass, roads, motes,
     inspectView: (a: number, h: number) => ((inspectAngle = a), (inspectHeight = h)),
     /** Renders a frame and returns it as a JPEG data URL (debug capture). */
     snap: (w = 1100, x0 = 0, y0 = 0, cw = 1, ch = 1) => {
