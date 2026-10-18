@@ -20,6 +20,7 @@ import { LoadingScreen } from './ui/loading';
 import { Trees } from './veg/trees';
 import { Grass } from './veg/grass';
 import { Props } from './world/props';
+import { Landmarks } from './world/landmarks';
 import { PowerLines } from './world/powerLines';
 import { LightPoints } from './render/lightPoints';
 import { ShadowMap } from './render/shadows';
@@ -84,9 +85,10 @@ async function boot() {
   const roads = new Roads(world.osm, heightfield);
   engine.scene.add(roads.group);
   const power = new PowerLines(world.osm, heightfield);
-  const props = new Props(world.osm, heightfield, power.pylons);
-  const lights = new LightPoints(props.lights);
-  engine.scene.add(props.group, lights.points, power.mesh);
+  const landmarks = new Landmarks(world.osm, heightfield);
+  const props = new Props(world.osm, heightfield, power.pylons, (x, z) => landmarks.occupies(x, z));
+  const lights = new LightPoints([...props.lights, ...landmarks.lights]);
+  engine.scene.add(props.group, landmarks.group, lights.points, power.mesh);
 
   const air = new AirField(heightfield);
   const species = speciesById(settings.bird) ?? SPECIES[0];
@@ -99,6 +101,7 @@ async function boot() {
   const shadow = new ShadowMap();
   trees.addShadowCasters(shadow);
   props.addShadowCasters(shadow);
+  landmarks.addShadowCasters(shadow);
   player.shadowCaster = shadow.addCaster(player.model.geometry, createBirdShadowMaterial(), player.object);
 
   const cam = engine.camera;
@@ -202,6 +205,7 @@ async function boot() {
     trees,
     grass,
     props,
+    landmarks,
     lights,
     power,
     roads,
