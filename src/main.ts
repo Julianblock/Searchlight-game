@@ -19,6 +19,9 @@ import { SPECIES, speciesById, type Palette } from './birds/species';
 import { LoadingScreen } from './ui/loading';
 import { Trees } from './veg/trees';
 import { Grass } from './veg/grass';
+import { Props } from './world/props';
+import { PowerLines } from './world/powerLines';
+import { LightPoints } from './render/lightPoints';
 import { ShadowMap } from './render/shadows';
 import { Roads } from './world/roads';
 import { RoadIndex } from './world/roadIndex';
@@ -80,6 +83,10 @@ async function boot() {
   engine.scene.add(grass.group);
   const roads = new Roads(world.osm, heightfield);
   engine.scene.add(roads.group);
+  const power = new PowerLines(world.osm, heightfield);
+  const props = new Props(world.osm, heightfield, power.pylons);
+  const lights = new LightPoints(props.lights);
+  engine.scene.add(props.group, lights.points, power.mesh);
 
   const air = new AirField(heightfield);
   const species = speciesById(settings.bird) ?? SPECIES[0];
@@ -91,6 +98,7 @@ async function boot() {
 
   const shadow = new ShadowMap();
   trees.addShadowCasters(shadow);
+  props.addShadowCasters(shadow);
   player.shadowCaster = shadow.addCaster(player.model.geometry, createBirdShadowMaterial(), player.object);
 
   const cam = engine.camera;
@@ -170,6 +178,9 @@ async function boot() {
     terrain.update(cam);
     trees.update(cam);
     grass.update(cam.position, seasonMonth());
+    props.update(cam.position, free ? cam.position : player.object.position);
+    lights.resize(cam, window.innerHeight * engine.pixelRatio);
+    power.resize(cam, window.innerHeight * engine.pixelRatio);
     shadow.update(engine.renderer, free ? cam.position : player.object.position);
     G.uInvExposure.value = 1 / env.exposure;
     sky.update(cam, env.exposure);
@@ -190,6 +201,9 @@ async function boot() {
     heightfield,
     trees,
     grass,
+    props,
+    lights,
+    power,
     roads,
     roadIndex,
     G,
