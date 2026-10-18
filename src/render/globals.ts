@@ -46,7 +46,7 @@ export const G = {
   uUnderwater: { value: 0 }, // 1 while the camera is below a water surface
   uCamWaterY: { value: -1000 }, // that surface's height
   uVision: { value: 0 }, // Highland Range easter egg: the Miocene volcanoes erupting, 0..1
-  uVolcano: { value: new THREE.Vector3() }, // volcanic core centre x, z and radius
+  uVolcano: { value: new THREE.Vector4() }, // volcanic centre x, z, radius and vent height
 };
 
 export type GlobalUniforms = typeof G;

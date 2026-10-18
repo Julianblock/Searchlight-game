@@ -25,7 +25,7 @@ uniform sampler2D uWaterTex;
 uniform float uWaterSize;
 uniform float uUnderwater;
 uniform float uVision;
-uniform vec3 uVolcano;
+uniform vec4 uVolcano;
 uniform float uCamWaterY;
 
 /** x: water surface height (m), y: channel mask (0 on dry land). */
