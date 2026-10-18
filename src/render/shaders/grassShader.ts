@@ -82,6 +82,14 @@ void main() {
   if (wl.y > 0.01 && wl.x > hC - 0.1) { collapse(); return; }
   float scrub = clamp(mA.r + mA.g + mA.b + mB.r, 0.0, 1.0);
   float habitat = scrub * (1.0 - rocky) * (1.0 - mA.a) * (1.0 - mB.b * 0.85);
+  // Past the landcover edge, Laughlin's own photo tells pavement and roofs (grey) from desert (tan).
+  float wLau = lauWeight(centre);
+  if (wLau > 0.0) {
+    vec3 lp = textureLod(uImgDetail, lauUV(centre, 4096.0), 0.0).rgb;
+    float sat = (max(lp.r, max(lp.g, lp.b)) - min(lp.r, min(lp.g, lp.b))) / max(max(lp.r, max(lp.g, lp.b)), 1e-3);
+    float outside = step(0.5, max(abs(lcUV.x - 0.5), abs(lcUV.y - 0.5)));
+    habitat = mix(habitat, outside > 0.5 ? smoothstep(0.14, 0.26, sat) * (1.0 - rocky) : habitat * smoothstep(0.1, 0.22, sat), wLau);
+  }
   float green = clamp(max(uVeg.x, uVeg.w * 0.8) + clamp(-nrm.z * 0.6, 0.0, 0.4) * 0.3, 0.0, 1.0);
   // Perennial bunchgrass is always there but sparse; a wet year carpets the
   // ground with brome and annuals, and the washes stay lusher than the flats.
