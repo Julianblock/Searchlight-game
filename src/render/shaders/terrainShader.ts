@@ -123,7 +123,7 @@ void main() {
   float north = clamp(-n.z * 0.6, 0.0, 0.4);
   float green = clamp(max(uVeg.x, uVeg.w * 0.7) + north * 0.25, 0.0, 1.0);
   vec3 flush = mix(vec3(0.11, 0.13, 0.06), vec3(0.17, 0.17, 0.08), nA) * (0.7 + 1.4 * l);
-  vec3 desert = mix(alb, mix(alb, flush, 0.35 + shrub * 0.5), green * (0.35 + 0.4 * smoothstep(0.55, 0.8, fbm(xz / 26.0, 3))));
+  vec3 desert = mix(alb, mix(alb, flush, 0.2 + shrub * 0.5), green * (0.22 + 0.33 * smoothstep(0.55, 0.8, fbm(xz / 26.0, 3))));
   // Summer bleaches the soil toward pale caliche and the shrubs toward olive-grey.
   desert = mix(desert, mix(desert * vec3(1.06, 1.02, 0.96), vec3(dot(desert, vec3(0.33))) * vec3(1.05, 0.98, 0.9), 0.3), uDesert.x * (1.0 - green));
   // Spring bloom: drifts of desert marigold, globemallow, lupine and desert dandelion.

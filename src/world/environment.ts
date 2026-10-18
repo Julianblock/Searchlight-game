@@ -92,7 +92,7 @@ export interface Strike {
 
 // Month keyframes (Jan..Dec) for the desert around Searchlight.
 const K = {
-  green: [0.35, 0.55, 0.8, 0.7, 0.35, 0.1, 0, 0.05, 0.1, 0.05, 0.1, 0.2],
+  green: [0.25, 0.4, 0.6, 0.5, 0.25, 0.08, 0, 0.05, 0.1, 0.05, 0.08, 0.15],
   joshuaBloom: [0, 0.3, 0.95, 0.7, 0.1, 0, 0, 0, 0, 0, 0, 0],
   flowers: [0, 0.1, 0.75, 0.9, 0.3, 0, 0, 0, 0, 0, 0, 0],
   monsoon: [0, 0, 0, 0, 0, 0, 0.4, 0.75, 0.5, 0.1, 0, 0],
