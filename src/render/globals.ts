@@ -15,6 +15,7 @@ export const G = {
   uMieScale: { value: 1 },
   uFogTop: { value: -1000 }, // dust / fog layer top (m MSL); below ground = disabled
   uFogDensity: { value: 0 },
+  uFogTint: { value: new THREE.Vector3(1, 1, 1) }, // grey fog, or ochre for blowing dust
   uCloudCover: { value: 0.25 },
   uCloudOffset: { value: new THREE.Vector2() },
   uWind: { value: new THREE.Vector2(2.5, 1.0) },
