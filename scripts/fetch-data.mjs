@@ -271,7 +271,7 @@ const steps = {
   },
   async osm() {
     console.log('osm/mid');
-    const osm = await buildOsm(REGIONS.mid.size, path.resolve('.cache/osm'));
+    const osm = await buildOsm(LC_SIZE, path.resolve('.cache/osm'));
     for (const [k, v] of Object.entries(osm)) console.log(`  ${k.padEnd(10)} ${v.length}`);
     await fs.writeFile(path.join(OUT, 'osm.json'), JSON.stringify(osm));
   },
