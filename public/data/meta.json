@@ -53,5 +53,26 @@
       "min": -95,
       "max": 3564.1640191799625
     }
+  },
+  "landcover": {
+    "size": 50000,
+    "res": 2048,
+    "classes": {
+      "OTHER": 0,
+      "CREOSOTE": 1,
+      "JOSHUA": 2,
+      "BLACKBRUSH": 3,
+      "WASH": 4,
+      "GRASS": 5,
+      "WETLAND": 6,
+      "WATER": 7,
+      "URBAN_OPEN": 8,
+      "URBAN_LOW": 9,
+      "URBAN_MED": 10,
+      "URBAN_HIGH": 11,
+      "PINYON": 12,
+      "ROCK": 13,
+      "FARM": 14
+    }
   }
 }
