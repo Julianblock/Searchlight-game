@@ -3,10 +3,11 @@ export const terrainCommon = /* glsl */ `
 #ifndef TERRAIN_COMMON
 #define TERRAIN_COMMON
 
-uniform sampler2D uHInner;
+uniform sampler2D uHDetail; // inner region in the top half, Laughlin in the bottom half
 uniform sampler2D uHMid;
 uniform sampler2D uHFar;
 uniform vec3 uRegionSize; // inner, mid, far
+uniform vec3 uLauRect; // Laughlin region centre x, z and size
 
 float regionWeight(float size, vec2 xz) {
   float e = max(abs(xz.x), abs(xz.y)) / (size * 0.5);
@@ -19,12 +20,27 @@ vec3 regionWeights(vec2 xz) {
 
 vec2 regionUV(vec2 xz, float size) { return xz / size + 0.5; }
 
+float lauWeight(vec2 xz) {
+  vec2 d = abs(xz - uLauRect.xy);
+  return clamp((1.0 - max(d.x, d.y) / (uLauRect.z * 0.5)) / 0.06, 0.0, 1.0);
+}
+
+/** Atlas UV for a region stacked into one half of a detail texture with \`res\` texels per side. */
+vec2 atlasUV(vec2 uv, float res, float slot) {
+  uv = clamp(uv, vec2(0.5 / res), vec2(1.0 - 0.5 / res));
+  return vec2(uv.x, (uv.y + slot) * 0.5);
+}
+vec2 innerUV(vec2 xz, float res) { return atlasUV(regionUV(xz, uRegionSize.x), res, 0.0); }
+vec2 lauUV(vec2 xz, float res) { return atlasUV((xz - uLauRect.xy) / uLauRect.z + 0.5, res, 1.0); }
+
 /** x: height (m), y: baked ambient occlusion */
 vec2 terrainSample(vec2 xz) {
   vec3 w = regionWeights(xz);
   vec2 s = vec2(textureLod(uHFar, regionUV(xz, uRegionSize.z), 0.0).r, 1.0);
   if (w.y > 0.0) s = mix(s, textureLod(uHMid, regionUV(xz, uRegionSize.y), 0.0).rg, w.y);
-  if (w.x > 0.0) s = mix(s, textureLod(uHInner, regionUV(xz, uRegionSize.x), 0.0).rg, w.x);
+  float wl = lauWeight(xz);
+  if (wl > 0.0) s = mix(s, textureLod(uHDetail, lauUV(xz, 2048.0), 0.0).rg, wl);
+  if (w.x > 0.0) s = mix(s, textureLod(uHDetail, innerUV(xz, 2048.0), 0.0).rg, w.x);
   return s;
 }
 
@@ -42,7 +58,8 @@ vec3 terrainNormal(vec2 xz, float e) {
 float terrainTexel(vec2 xz) {
   vec3 w = regionWeights(xz);
   if (w.x > 0.0) return uRegionSize.x / 2048.0;
-  if (w.y > 0.0) return uRegionSize.y / 1024.0;
+  if (lauWeight(xz) > 0.0) return uLauRect.z / 2048.0;
+  if (w.y > 0.0) return uRegionSize.y / 2048.0;
   return uRegionSize.z / 1024.0;
 }
 

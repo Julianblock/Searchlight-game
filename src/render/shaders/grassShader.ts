@@ -12,7 +12,7 @@ ${waterCommon}
 uniform vec3 uCamPos;
 uniform float uTime;
 uniform vec2 uWind;
-uniform sampler2D uImgInner;
+uniform sampler2D uImgDetail;
 uniform sampler2D uImgMid;
 uniform sampler2D uMaskA;
 uniform sampler2D uMaskB;
@@ -72,7 +72,7 @@ void main() {
   vec4 mB = texture(uMaskB, lcUV);
   float hC = terrainHeight(centre);
   float wIn = regionWeight(uRegionSize.x, centre);
-  vec3 photo = textureLod(uImgInner, regionUV(centre, uRegionSize.x), 0.0).rgb;
+  vec3 photo = textureLod(uImgDetail, innerUV(centre, 4096.0), 0.0).rgb;
   if (wIn < 1.0) photo = mix(textureLod(uImgMid, regionUV(centre, uRegionSize.y), 0.0).rgb, photo, wIn);
   vec3 alb = photo * 0.8;
   float l = luma(alb);

@@ -4,7 +4,7 @@ import { G } from './globals';
 import { terrainCommon } from './shaders/terrainCommon';
 import type { WorldTextures } from '../world/textures';
 
-const SIZE = 50000;
+const SIZE = 96000;
 const RES = 2048;
 
 const frag = /* glsl */ `
@@ -51,7 +51,8 @@ export class TerrainShadow {
         vertexShader: 'out vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
         fragmentShader: frag,
         uniforms: {
-          uHInner: { value: tex.heightInner },
+          uHDetail: { value: tex.heightDetail },
+          uLauRect: G.uLauRect,
           uHMid: { value: tex.heightMid },
           uHFar: { value: tex.heightFar },
           uRegionSize: { value: new THREE.Vector3(...regionSizes) },

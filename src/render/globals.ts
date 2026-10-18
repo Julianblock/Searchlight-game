@@ -43,6 +43,9 @@ export const G = {
   uFlash: { value: 0 }, // lightning flash brightness (display units)
   uWaterTex: { value: null as THREE.Texture | null }, // R water surface (m), G channel mask
   uWaterSize: { value: 50000 },
+  uWaterDetail: { value: new THREE.Vector3(0, 0, 1) }, // Davis Dam / Laughlin water grid centre x, z, size
+  uWaterAtlas: { value: new THREE.Vector4(1, 0, 0, 1) }, // main grid's share of height, detail share of width & height, detail res
+  uLauRect: { value: new THREE.Vector3(30000, 34700, 13000) }, // Laughlin detail region centre x, z, size
   uUnderwater: { value: 0 }, // 1 while the camera is below a water surface
   uCamWaterY: { value: -1000 }, // that surface's height
   uVision: { value: 0 }, // Highland Range easter egg: the Miocene volcanoes erupting, 0..1

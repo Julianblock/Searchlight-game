@@ -3,10 +3,12 @@ import type { HeightGrid, Pixels, WorldData } from './loader';
 import { LC } from './meta';
 
 export interface WorldTextures {
-  heightInner: THREE.DataTexture;
+  /** Inner region heights in the top half, Laughlin in the bottom half. */
+  heightDetail: THREE.DataTexture;
   heightMid: THREE.DataTexture;
   heightFar: THREE.DataTexture;
-  imgInner: THREE.Texture;
+  /** Inner region photo on top, Laughlin below. */
+  imgDetail: THREE.Texture;
   imgMid: THREE.Texture;
   imgFar: THREE.Texture;
   /** R creosote / galleta flats, G Joshua tree belt, B blackbrush & pinyon, A open water */
@@ -16,13 +18,18 @@ export interface WorldTextures {
   canopy: THREE.DataTexture;
 }
 
-function heightTexture(g: HeightGrid): THREE.DataTexture {
-  const data = new Float32Array(g.res * g.res * 2);
-  for (let i = 0; i < g.res * g.res; i++) {
-    data[i * 2] = g.heights[i];
-    data[i * 2 + 1] = g.ao[i];
-  }
-  const t = new THREE.DataTexture(data, g.res, g.res, THREE.RGFormat, THREE.FloatType);
+function heightTexture(...grids: HeightGrid[]): THREE.DataTexture {
+  const res = grids[0].res;
+  const n = res * res;
+  const data = new Float32Array(n * 2 * grids.length);
+  grids.forEach((g, k) => {
+    if (g.res !== res) throw new Error('Stacked height grids must share a resolution');
+    for (let i = 0; i < n; i++) {
+      data[(k * n + i) * 2] = g.heights[i];
+      data[(k * n + i) * 2 + 1] = g.ao[i];
+    }
+  });
+  const t = new THREE.DataTexture(data, res, res * grids.length, THREE.RGFormat, THREE.FloatType);
   t.minFilter = THREE.LinearFilter;
   t.magFilter = THREE.LinearFilter;
   t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
@@ -30,7 +37,16 @@ function heightTexture(g: HeightGrid): THREE.DataTexture {
   return t;
 }
 
-function imageTexture(bmp: ImageBitmap, anisotropy: number): THREE.Texture {
+/** Stacks equally sized photos top to bottom in one canvas. */
+function stackImages(bmps: ImageBitmap[]): OffscreenCanvas {
+  const { width, height } = bmps[0];
+  const canvas = new OffscreenCanvas(width, height * bmps.length);
+  const ctx = canvas.getContext('2d')!;
+  bmps.forEach((b, k) => ctx.drawImage(b, 0, k * height, width, height));
+  return canvas;
+}
+
+function imageTexture(bmp: ImageBitmap | OffscreenCanvas, anisotropy: number): THREE.Texture {
   const t = new THREE.Texture(bmp as unknown as HTMLImageElement);
   t.colorSpace = THREE.SRGBColorSpace;
   t.flipY = false;
@@ -78,10 +94,10 @@ export function createWorldTextures(world: WorldData, renderer: THREE.WebGLRende
   canopy.minFilter = canopy.magFilter = THREE.LinearFilter;
   canopy.needsUpdate = true;
   return {
-    heightInner: heightTexture(world.heights.inner),
+    heightDetail: heightTexture(world.heights.inner, world.heights.laughlin),
     heightMid: heightTexture(world.heights.mid),
     heightFar: heightTexture(world.heights.far),
-    imgInner: imageTexture(world.imagery.inner, aniso),
+    imgDetail: imageTexture(stackImages([world.imagery.inner, world.imagery.laughlin]), aniso),
     imgMid: imageTexture(world.imagery.mid, aniso),
     imgFar: imageTexture(world.imagery.far, aniso),
     maskA,

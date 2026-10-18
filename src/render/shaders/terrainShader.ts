@@ -35,7 +35,7 @@ export const terrainFragment = /* glsl */ `
 ${lightingCommon}
 ${terrainCommon}
 #include <logdepthbuf_pars_fragment>
-uniform sampler2D uImgInner;
+uniform sampler2D uImgDetail; // inner region on top, Laughlin below
 uniform sampler2D uImgMid;
 uniform sampler2D uImgFar;
 uniform sampler2D uMaskA;
@@ -97,7 +97,9 @@ void main() {
 
   vec3 alb = texture(uImgFar, regionUV(xz, uRegionSize.z)).rgb;
   if (w.y > 0.0) alb = mix(alb, texture(uImgMid, regionUV(xz, uRegionSize.y)).rgb, w.y);
-  if (w.x > 0.0) alb = mix(alb, texture(uImgInner, regionUV(xz, uRegionSize.x)).rgb, w.x);
+  float wLau = lauWeight(xz);
+  if (wLau > 0.0) alb = mix(alb, texture(uImgDetail, lauUV(xz, 4096.0)).rgb, wLau);
+  if (w.x > 0.0) alb = mix(alb, texture(uImgDetail, innerUV(xz, 4096.0)).rgb, w.x);
   // Orthophotos are exposed for display; pale desert soil keeps more of its brightness.
   alb *= 0.8;
 

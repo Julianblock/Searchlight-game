@@ -69,10 +69,10 @@ export class Terrain {
       uniforms: {
         ...G,
         ...seasonUniforms,
-        uHInner: { value: tex.heightInner },
+        uHDetail: { value: tex.heightDetail },
         uHMid: { value: tex.heightMid },
         uHFar: { value: tex.heightFar },
-        uImgInner: { value: tex.imgInner },
+        uImgDetail: { value: tex.imgDetail },
         uImgMid: { value: tex.imgMid },
         uImgFar: { value: tex.imgFar },
         uMaskA: { value: tex.maskA },

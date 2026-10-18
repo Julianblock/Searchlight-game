@@ -68,10 +68,11 @@ export class Grass {
     this.hf = hf;
     const geo = clumpGeometry();
     const shared = {
-      uHInner: terrainUniforms.uHInner,
+      uHDetail: terrainUniforms.uHDetail,
+      uLauRect: terrainUniforms.uLauRect,
       uHMid: terrainUniforms.uHMid,
       uHFar: terrainUniforms.uHFar,
-      uImgInner: terrainUniforms.uImgInner,
+      uImgDetail: terrainUniforms.uImgDetail,
       uImgMid: terrainUniforms.uImgMid,
       uMaskA: terrainUniforms.uMaskA,
       uMaskB: terrainUniforms.uMaskB,
