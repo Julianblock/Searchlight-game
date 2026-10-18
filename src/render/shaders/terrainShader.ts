@@ -221,7 +221,7 @@ void main() {
     // Relative to the soil so stones never out-shine the ground they sit on.
     vec3 varnish = alb * vec3(0.62, 0.56, 0.52) * mix(0.7, 1.1, fract(pb.y * 7.0));
     vec3 stoneCol = pb.y > 0.985 ? alb * 1.25 : varnish;
-    alb = mix(alb, stoneCol, stone * pebbleFade * 0.6);
+    alb = mix(alb, stoneCol, stone * pebbleFade * 0.42);
   }
   float h0 = vnoise(q1 / 3.7) + 0.5 * vnoise(q2 / 1.4);
   float hx = vnoise((q1 + vec2(0.5, 0.0)) / 3.7) + 0.5 * vnoise((q2 + vec2(0.5, 0.0)) / 1.4);
