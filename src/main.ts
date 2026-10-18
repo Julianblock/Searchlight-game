@@ -27,6 +27,7 @@ import { Traffic } from './life/traffic';
 import { Wildlife } from './life/wildlife';
 import { Flocks } from './life/flocks';
 import { Fish } from './life/fish';
+import { Ghosts } from './life/ghosts';
 import { ShadowMap } from './render/shadows';
 import { Roads } from './world/roads';
 import { RoadIndex } from './world/roadIndex';
@@ -113,6 +114,9 @@ async function boot() {
   const fish = new Fish(water, heightfield);
   fish.setMonth(env.month);
   engine.scene.add(fish.mesh);
+  const graveyard = cemeteryPlans.find((p) => p.name === 'Searchlight Cemetery');
+  const ghosts = graveyard ? new Ghosts(graveyard, heightfield) : null;
+  if (ghosts) engine.scene.add(ghosts.group);
 
   const air = new AirField(heightfield);
   const species = speciesById(settings.bird) ?? SPECIES[0];
@@ -217,6 +221,7 @@ async function boot() {
     traffic.update(dt, cam.position, G.uNight.value, Math.max(G.uNight.value, G.uFogDensity.value > 0.003 ? 0.35 : 0), 1 - 0.2 * G.uWet.value - 0.35 * G.uSnowCover.value);
     flocks.setMonth(env.month);
     fish.setMonth(env.month);
+    ghosts?.update(dt, cam, G.uNight.value);
     fish.update(dt, cam, camWater.mask > 0.3 && cam.position.y < camWater.level + 6, free ? cam.position : player.object.position);
     flocks.update(dt, cam.position, { x: air.windX, z: air.windZ });
     wildlife.update(dt, cam.position, free ? cam.position : player.object.position);
@@ -250,6 +255,7 @@ async function boot() {
     wildlife,
     flocks,
     fish,
+    ghosts,
     roads,
     cemeteries,
     cemeteryPlans,
