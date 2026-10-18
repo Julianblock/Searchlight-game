@@ -65,6 +65,31 @@ vec3 waterNormal(vec2 xz, float dist) {
   return normalize(vec3((a - b) * amp / e + rip.x + sx * 0.4, 1.0, (a - c) * amp / e + rip.y + sz * 0.4));
 }
 
+uniform vec4 uStripA[16];
+uniform vec4 uStripB[16];
+
+/** Laughlin's lit facades seen along the reflected ray; ripples smear them into columns. */
+vec3 stripReflection(vec3 p, vec3 R) {
+  vec3 s = vec3(0.0);
+  float rl = length(R.xz);
+  if (rl < 1e-3) return s;
+  vec2 rh = R.xz / rl;
+  for (int i = 0; i < 16; i++) {
+    vec4 a = uStripA[i];
+    if (a.w <= a.z) break;
+    vec4 b = uStripB[i];
+    vec2 d = a.xy - p.xz;
+    float along = dot(rh, d);
+    if (along <= 0.0) continue;
+    float side = abs(rh.x * d.y - rh.y * d.x);
+    float y = p.y + R.y / rl * along;
+    float vert = smoothstep(a.z - 3.0, a.z + 3.0, y) * (1.0 - smoothstep(a.w - 2.0, a.w + 4.0, y));
+    float horiz = 1.0 - smoothstep(b.w * 0.7, b.w * 1.1, side);
+    s += b.rgb * vert * horiz;
+  }
+  return s;
+}
+
 void main() {
   #include <logdepthbuf_fragment>
   vec2 xz = vWorld.xz;
@@ -89,6 +114,7 @@ void main() {
     refl += sunRadiance(vWorld.y) * shadow * (pow(sd, 900.0) * 55.0 + pow(sd, 80.0) * 0.12);
     refl += moonRadiance(vWorld.y) * pow(max(dot(R, uMoonDir), 0.0), 700.0) * 90.0;
     refl += flashLight(vec3(0.0, 1.0, 0.0)) * 0.3;
+    if (uNight > 0.0 && lauWeight(xz) > 0.0) refl += stripReflection(vWorld, R) * uNight * uInvExposure * 0.18;
     // Down through the water to the bed along the refracted ray, and back.
     float cosT = sqrt(1.0 - (1.0 - cosV * cosV) / 1.77);
     vec3 T = exp(-WATER_SIGMA * depth / max(cosT, 0.12));
