@@ -152,7 +152,7 @@ export class CarPhysics {
 
   /** Puts the car at rest exactly at (x, z) facing `psi`. */
   place(x: number, z: number, psi: number) {
-    this.pos.set(x, this.hf.height(x, z), z);
+    this.pos.set(x, this.hf.surface(x, z), z);
     this.psi = psi;
     this.vel.set(0, 0, 0);
     this.speed = 0;
@@ -308,7 +308,7 @@ export class CarPhysics {
     const r = new THREE.Vector3(-f.z, 0, f.x);
     const { x, z } = this.pos;
     const hw = WHEELBASE / 2, ht = TRACK / 2;
-    const h = (sf: number, sr: number) => this.hf.height(x + f.x * sf + r.x * sr, z + f.z * sf + r.z * sr);
+    const h = (sf: number, sr: number) => this.hf.surface(x + f.x * sf + r.x * sr, z + f.z * sf + r.z * sr);
     const fl = h(hw, -ht), fr = h(hw, ht), rl = h(-hw, -ht), rr = h(-hw, ht);
     const ground = (fl + fr + rl + rr) / 4;
     const pitchSlope = (fl + fr - rl - rr) / 2 / WHEELBASE;

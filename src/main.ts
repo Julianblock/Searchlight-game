@@ -632,7 +632,8 @@ async function boot() {
     car.model.weather(dt, car.physics.speed);
     car.physics.wet = G.uWet.value;
     car.physics.snow = G.uSnowCover.value;
-    car.physics.waterDepth = water.depthAt(car.physics.pos.x, car.physics.pos.z);
+    const carWater = water.sample(car.physics.pos.x, car.physics.pos.z);
+    car.physics.waterDepth = carWater.mask > 0 ? Math.max(0, carWater.level - heightfield.surface(car.physics.pos.x, car.physics.pos.z)) : 0;
     const actor = driving ? car.object.position : player.object.position;
     wildlife.update(dt, cam.position, actor);
     flocks.setMonth(env.month);

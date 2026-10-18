@@ -30,6 +30,8 @@ export class Heightfield {
   private readonly lc: Pixels;
   private readonly lcSize: number;
   private readonly canopy: Pixels;
+  /** Bridge decks the car and traffic drive over: ends, half width, deck heights at each end. */
+  private readonly decks: { ax: number; az: number; bx: number; bz: number; half: number; ya: number; yb: number }[] = [];
 
   constructor(world: WorldData) {
     this.inner = world.heights.inner;
@@ -49,6 +51,26 @@ export class Heightfield {
     const wl = this.lauWeight(x, z);
     if (wl > 0) h += (bilinear(this.laughlin, this.laughlin.heights, x, z) - h) * wl;
     if (wi > 0) h += (bilinear(this.inner, this.inner.heights, x, z) - h) * wi;
+    return h;
+  }
+
+  /** Adds a bridge deck from a to b, `half` metres either side, rising from ya to yb. */
+  addDeck(ax: number, az: number, bx: number, bz: number, half: number, ya: number, yb: number) {
+    this.decks.push({ ax, az, bx, bz, half, ya, yb });
+  }
+
+  /** What wheels rest on: the ground, or a bridge deck above it. */
+  surface(x: number, z: number): number {
+    let h = this.height(x, z);
+    for (const d of this.decks) {
+      const dx = d.bx - d.ax;
+      const dz = d.bz - d.az;
+      const l2 = dx * dx + dz * dz;
+      const t = ((x - d.ax) * dx + (z - d.az) * dz) / l2;
+      if (t < 0 || t > 1) continue;
+      if (Math.abs((x - d.ax) * dz - (z - d.az) * dx) / Math.sqrt(l2) > d.half) continue;
+      h = Math.max(h, d.ya + (d.yb - d.ya) * t + Math.sin(t * Math.PI) * 1.2);
+    }
     return h;
   }
 
