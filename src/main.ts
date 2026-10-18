@@ -25,6 +25,7 @@ import { PowerLines } from './world/powerLines';
 import { LightPoints } from './render/lightPoints';
 import { Traffic } from './life/traffic';
 import { Wildlife } from './life/wildlife';
+import { Flocks } from './life/flocks';
 import { ShadowMap } from './render/shadows';
 import { Roads } from './world/roads';
 import { RoadIndex } from './world/roadIndex';
@@ -101,6 +102,9 @@ async function boot() {
   engine.scene.add(traffic.group);
   const wildlife = new Wildlife(heightfield);
   engine.scene.add(wildlife.group);
+  const flocks = new Flocks(heightfield);
+  flocks.setMonth(env.month);
+  engine.scene.add(flocks.mesh);
 
   const air = new AirField(heightfield);
   const species = speciesById(settings.bird) ?? SPECIES[0];
@@ -202,6 +206,8 @@ async function boot() {
     power.resize(cam, window.innerHeight * engine.pixelRatio);
     traffic.lights.resize(cam, window.innerHeight * engine.pixelRatio);
     traffic.update(dt, cam.position, G.uNight.value, Math.max(G.uNight.value, G.uFogDensity.value > 0.003 ? 0.35 : 0), 1 - 0.2 * G.uWet.value - 0.35 * G.uSnowCover.value);
+    flocks.setMonth(env.month);
+    flocks.update(dt, cam.position, { x: air.windX, z: air.windZ });
     wildlife.update(dt, cam.position, free ? cam.position : player.object.position);
     shadow.update(engine.renderer, free ? cam.position : player.object.position);
     G.uInvExposure.value = 1 / env.exposure;
@@ -231,6 +237,7 @@ async function boot() {
     power,
     traffic,
     wildlife,
+    flocks,
     roads,
     roadIndex,
     G,
