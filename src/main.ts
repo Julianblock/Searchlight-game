@@ -17,6 +17,8 @@ import { ChaseCamera } from './birds/camera';
 import { Controls } from './birds/input';
 import { SPECIES, speciesById, type Palette } from './birds/species';
 import { LoadingScreen } from './ui/loading';
+import { Roads } from './world/roads';
+import { RoadIndex } from './world/roadIndex';
 import { loadSettings, type GameSettings } from './ui/settings';
 
 function paletteFor(s: GameSettings): Palette {
@@ -41,6 +43,7 @@ async function boot() {
   const world = await loadWorld((label, f) => loading.progress(label, f * 0.9));
   loading.progress('Laying out the desert', 0.92);
   const heightfield = new Heightfield(world);
+  const roadIndex = new RoadIndex(world.osm);
   const tex = createWorldTextures(world, engine.renderer);
   const regionSizes: [number, number, number] = [
     world.meta.regions.inner.size,
@@ -62,6 +65,9 @@ async function boot() {
   const terrain = new Terrain(tex, regionSizes, world.meta.landcover.size);
   const sky = new Sky();
   engine.scene.add(sky.mesh, terrain.mesh);
+
+  const roads = new Roads(world.osm, heightfield);
+  engine.scene.add(roads.group);
 
   const air = new AirField(heightfield);
   const species = speciesById(settings.bird) ?? SPECIES[0];
@@ -163,6 +169,8 @@ async function boot() {
     env,
     terrain,
     heightfield,
+    roads,
+    roadIndex,
     G,
     player,
     chase,
