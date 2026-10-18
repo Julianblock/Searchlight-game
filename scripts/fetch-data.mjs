@@ -1,6 +1,6 @@
 // Builds the real-world datasets the game streams at runtime.
 //   node scripts/fetch-data.mjs [step...]
-// Steps: height (default: all)
+// Steps: height, imagery (default: all)
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -60,6 +60,24 @@ async function buildHeight(name) {
   return { min, max };
 }
 
+async function buildImagery(name) {
+  const r = REGIONS[name];
+  console.log(`imagery/${name}`);
+  const sample = await buildMosaic('usgsImagery', r.imageZoom, r.size * 1.02);
+  const raw = Buffer.alloc(r.imageRes * r.imageRes * 3);
+  const rgb = [0, 0, 0];
+  forEachPixel(r.imageRes, r.size, (i, j, x, z) => {
+    sample(x, z, rgb);
+    const o = (j * r.imageRes + i) * 3;
+    raw[o] = rgb[0];
+    raw[o + 1] = rgb[1];
+    raw[o + 2] = rgb[2];
+  });
+  await sharp(raw, { raw: { width: r.imageRes, height: r.imageRes, channels: 3 } })
+    .jpeg({ quality: 88, mozjpeg: true })
+    .toFile(path.join(OUT, `imagery_${name}.jpg`));
+}
+
 async function writeMeta(extra = {}) {
   const file = path.join(OUT, 'meta.json');
   let meta = {};
@@ -75,6 +93,9 @@ const steps = {
     const ranges = {};
     for (const name of Object.keys(REGIONS)) ranges[name] = await buildHeight(name);
     await writeMeta({ heightRanges: ranges });
+  },
+  async imagery() {
+    for (const name of Object.keys(REGIONS)) await buildImagery(name);
   },
 };
 
