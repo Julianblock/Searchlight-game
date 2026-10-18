@@ -1,6 +1,6 @@
 // Builds the real-world datasets the game streams at runtime.
 //   node scripts/fetch-data.mjs [step...]
-// Steps: height, imagery, landcover, osm (default: all)
+// Steps: height, imagery, landcover, derived, trees, osm (default: all)
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -8,11 +8,15 @@ import sharp from 'sharp';
 import { CENTER } from './lib/geo.mjs';
 import { buildMosaic } from './lib/tiles.mjs';
 import { buildLandcover, LC } from './lib/landcover.mjs';
-import { readHeight } from './lib/derived.mjs';
+import { canopyMask, horizonAO, readHeight } from './lib/derived.mjs';
+import { detectTrees } from './lib/trees.mjs';
 import { buildOsm } from './lib/osm.mjs';
 import { flowAccumulation } from './lib/washes.mjs';
 
 const OUT = path.resolve('public/data');
+// Square zone around town where individual Joshua trees, yuccas and creosote are detected from z16 imagery.
+const TREE_ZONE = 16000;
+
 export const REGIONS = {
   inner: { size: 22000, heightRes: 2048, heightZoom: 14, imageRes: 4096, imageZoom: 15 },
   mid: { size: 50000, heightRes: 1024, heightZoom: 12, imageRes: 2048, imageZoom: 13 },
@@ -192,6 +196,73 @@ const steps = {
       .png({ compressionLevel: 9 })
       .toFile(path.join(OUT, 'landcover.png'));
     await writeMeta({ landcover: { size, res, classes: LC } });
+  },
+  async derived() {
+    for (const name of ['inner', 'mid']) {
+      console.log(`ao/${name}`);
+      const r = REGIONS[name];
+      const file = path.join(OUT, `height_${name}.png`);
+      const { h, N, raw, channels } = await readHeight(file, HEIGHT_ENCODING[name]);
+      const ao = horizonAO(h, N, r.size / N);
+      const outBuf = Buffer.alloc(N * N * 3);
+      for (let i = 0; i < N * N; i++) {
+        outBuf[i * 3] = raw[i * channels];
+        outBuf[i * 3 + 1] = raw[i * channels + 1];
+        outBuf[i * 3 + 2] = Math.round(ao[i] * 255);
+      }
+      await sharp(outBuf, { raw: { width: N, height: N, channels: 3 } }).png({ compressionLevel: 9 }).toFile(file + '.tmp');
+      await fs.rename(file + '.tmp', file);
+    }
+
+    console.log('canopy/inner');
+    const lc = await sharp(path.join(OUT, 'landcover.png')).raw().toBuffer({ resolveWithObject: true });
+    const lcRes = lc.info.width;
+    const res = 1024;
+    const inner = REGIONS.inner.size;
+    const treeClasses = new Set([LC.CREOSOTE, LC.JOSHUA, LC.BLACKBRUSH, LC.WASH, LC.GRASS, LC.PINYON, LC.OTHER]);
+    const mask = await canopyMask(path.join(OUT, 'imagery_inner.jpg'), res, (i, j) => {
+      const x = -inner / 2 + ((i + 0.5) / res) * inner;
+      const z = -inner / 2 + ((j + 0.5) / res) * inner;
+      const li = Math.floor((x / REGIONS.mid.size + 0.5) * lcRes);
+      const lj = Math.floor((z / REGIONS.mid.size + 0.5) * lcRes);
+      return treeClasses.has(lc.data[(lj * lcRes + li) * lc.info.channels]);
+    });
+    await sharp(Buffer.from(mask), { raw: { width: res, height: res, channels: 1 } })
+      .png({ compressionLevel: 9 })
+      .toFile(path.join(OUT, 'canopy_inner.png'));
+  },
+  async trees() {
+    console.log('plants/searchlight');
+    const lc = await sharp(path.join(OUT, 'landcover.png')).raw().toBuffer({ resolveWithObject: true });
+    const lcRes = lc.info.width;
+    const ok = new Set([LC.CREOSOTE, LC.JOSHUA, LC.BLACKBRUSH, LC.WASH, LC.GRASS, LC.WETLAND, LC.PINYON, LC.OTHER, LC.URBAN_OPEN, LC.URBAN_LOW]);
+    const size = TREE_ZONE;
+    const trees = await detectTrees({
+      size,
+      cell: 2.5,
+      zoom: 16,
+      // Pale caliche and sand make even small shrubs stand out.
+      rel: 0.84,
+      maxL: 150,
+      absL: 70,
+      minR: 1.4,
+      allow: (x, z) => {
+        const li = Math.floor((x / REGIONS.mid.size + 0.5) * lcRes);
+        const lj = Math.floor((z / REGIONS.mid.size + 0.5) * lcRes);
+        return ok.has(lc.data[(lj * lcRes + li) * lc.info.channels]);
+      },
+    });
+    // 6 bytes per tree: uint16 x, uint16 z (over the zone), uint8 radius*20, uint8 darkness*255.
+    const buf = Buffer.alloc(trees.length * 6);
+    trees.forEach(([x, z, r, d], k) => {
+      buf.writeUInt16LE(Math.round(((x / size) + 0.5) * 65535), k * 6);
+      buf.writeUInt16LE(Math.round(((z / size) + 0.5) * 65535), k * 6 + 2);
+      buf.writeUInt8(Math.min(255, Math.round(r * 20)), k * 6 + 4);
+      buf.writeUInt8(Math.min(255, Math.round(d * 255)), k * 6 + 5);
+    });
+    await fs.writeFile(path.join(OUT, 'trees.bin'), buf);
+    console.log(`  ${trees.length} trees, ${(buf.length / 1024).toFixed(0)} KB`);
+    await writeMeta({ trees: { size, count: trees.length } });
   },
   async osm() {
     console.log('osm/mid');
