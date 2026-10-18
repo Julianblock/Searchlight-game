@@ -26,6 +26,7 @@ import { LightPoints } from './render/lightPoints';
 import { Traffic } from './life/traffic';
 import { Wildlife } from './life/wildlife';
 import { Flocks } from './life/flocks';
+import { Fish } from './life/fish';
 import { ShadowMap } from './render/shadows';
 import { Roads } from './world/roads';
 import { RoadIndex } from './world/roadIndex';
@@ -105,6 +106,9 @@ async function boot() {
   const flocks = new Flocks(heightfield);
   flocks.setMonth(env.month);
   engine.scene.add(flocks.mesh);
+  const fish = new Fish(water, heightfield);
+  fish.setMonth(env.month);
+  engine.scene.add(fish.mesh);
 
   const air = new AirField(heightfield);
   const species = speciesById(settings.bird) ?? SPECIES[0];
@@ -207,6 +211,8 @@ async function boot() {
     traffic.lights.resize(cam, window.innerHeight * engine.pixelRatio);
     traffic.update(dt, cam.position, G.uNight.value, Math.max(G.uNight.value, G.uFogDensity.value > 0.003 ? 0.35 : 0), 1 - 0.2 * G.uWet.value - 0.35 * G.uSnowCover.value);
     flocks.setMonth(env.month);
+    fish.setMonth(env.month);
+    fish.update(dt, cam, camWater.mask > 0.3 && cam.position.y < camWater.level + 6, free ? cam.position : player.object.position);
     flocks.update(dt, cam.position, { x: air.windX, z: air.windZ });
     wildlife.update(dt, cam.position, free ? cam.position : player.object.position);
     shadow.update(engine.renderer, free ? cam.position : player.object.position);
@@ -238,6 +244,7 @@ async function boot() {
     traffic,
     wildlife,
     flocks,
+    fish,
     roads,
     roadIndex,
     G,
