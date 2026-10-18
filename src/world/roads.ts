@@ -45,7 +45,7 @@ export class Roads {
   readonly group = new THREE.Group();
   readonly material: THREE.ShaderMaterial;
 
-  constructor(osm: OsmData, hf: Heightfield, radius = 24000) {
+  constructor(osm: OsmData, hf: Heightfield, radius = 48000) {
     this.material = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       vertexShader: roadVertex,
