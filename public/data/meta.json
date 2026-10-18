@@ -12,10 +12,10 @@
       "imageZoom": 15
     },
     "mid": {
-      "size": 50000,
-      "heightRes": 1024,
+      "size": 92000,
+      "heightRes": 2048,
       "heightZoom": 12,
-      "imageRes": 2048,
+      "imageRes": 4096,
       "imageZoom": 13
     },
     "far": {
@@ -24,6 +24,15 @@
       "heightZoom": 9,
       "imageRes": 2048,
       "imageZoom": 10
+    },
+    "laughlin": {
+      "size": 13000,
+      "cx": 30000,
+      "cz": 34700,
+      "heightRes": 2048,
+      "heightZoom": 14,
+      "imageRes": 4096,
+      "imageZoom": 16
     }
   },
   "heightEncoding": {
@@ -38,6 +47,10 @@
     "far": {
       "offset": 100,
       "scale": 16
+    },
+    "laughlin": {
+      "offset": 0,
+      "scale": 24
     }
   },
   "heightRanges": {
@@ -46,12 +59,16 @@
       "max": 1454.9842137341766
     },
     "mid": {
-      "min": 195.19517873675105,
-      "max": 2139.907578870744
+      "min": 146.29147098169133,
+      "max": 2273.5562892644593
     },
     "far": {
       "min": -95,
       "max": 3564.1640191799625
+    },
+    "laughlin": {
+      "min": 149.41263700806405,
+      "max": 651.6903521590391
     }
   },
   "landcover": {
