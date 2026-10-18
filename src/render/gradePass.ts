@@ -43,10 +43,11 @@ export function createGradePass(): ShaderPass {
 
       void main() {
         vec3 c = texture2D(tDiffuse, vUv).rgb;
-        // Scotopic shift: at night colour vision fades and shifts towards blue.
+        // Scotopic shift: at night colour vision fades and shifts towards blue,
+        // but neon, sodium lamps and lit signs are bright enough for the cones.
         float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
         vec3 scotopic = vec3(0.55, 0.68, 1.0) * lum * 1.1;
-        c = mix(c, scotopic, uNight * 0.65);
+        c = mix(c, scotopic, uNight * 0.65 * (1.0 - smoothstep(0.03, 0.3, lum)));
 
         c = aces(c * 1.6);
         float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
