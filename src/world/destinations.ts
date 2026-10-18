@@ -13,6 +13,11 @@ export const DESTINATIONS: Destination[] = [
     label: 'US-95 into Searchlight',
     blurb: "Roll in from the north past the welcome sign, Terrible's Roadhouse and its Denny's, the McDonald's arches and the gas stations.",
   },
+  {
+    id: 'overlook',
+    label: 'Duplex Hill overlook',
+    blurb: 'The hill above the old Duplex Mine: the whole town, the ribbon of US-95 running north toward Las Vegas, and the Highland Range beyond.',
+  },
   { id: 'main', label: 'Main Street', blurb: 'The old mining-camp grid behind the highway: the post office, the El Rey Motel and the Duplex Mine headframe on the hill.' },
   {
     id: 'cove',
@@ -58,6 +63,11 @@ const FACING: Record<string, [number, number]> = {
   christmastree: [22000, 23000],
 };
 
+/** Off-road lookouts: position and the point to face. */
+const LOOKOUTS: Record<string, [number, number, number, number]> = {
+  overlook: [-200, 660, -120, -1500],
+};
+
 export interface Spot {
   x: number;
   z: number;
@@ -98,6 +108,11 @@ export function resolveDestination(id: string, osm: OsmData, cemeteries: Cemeter
     const [fx, fz] = FACING[id];
     const sg = s.dx * (fx - s.x) + s.dz * (fz - s.z) >= 0 ? 1 : -1;
     return { x: s.x, z: s.z, psi: Math.atan2(s.dx * sg, s.dz * sg), road: true };
+  }
+  const look = LOOKOUTS[id];
+  if (look) {
+    const [x, z, fx, fz] = look;
+    return { x, z, psi: Math.atan2(fx - x, fz - z), road: false };
   }
   if (id === 'cemetery') {
     const c = cemeteries.find((p) => p.name === 'Searchlight Cemetery');
