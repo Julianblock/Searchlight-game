@@ -27,6 +27,8 @@ import { Traffic } from './life/traffic';
 import { ShadowMap } from './render/shadows';
 import { Roads } from './world/roads';
 import { RoadIndex } from './world/roadIndex';
+import { Water } from './world/water';
+import { WaterSurface } from './render/waterSurface';
 import { createBirdShadowMaterial } from './birds/birdShader';
 import { loadSettings, type GameSettings } from './ui/settings';
 
@@ -53,6 +55,9 @@ async function boot() {
   loading.progress('Laying out the desert', 0.92);
   const heightfield = new Heightfield(world);
   const roadIndex = new RoadIndex(world.osm);
+  const water = new Water(world, heightfield, roadIndex);
+  G.uWaterTex.value = water.texture;
+  G.uWaterSize.value = water.size;
   const tex = createWorldTextures(world, engine.renderer);
   const regionSizes: [number, number, number] = [
     world.meta.regions.inner.size,
@@ -73,7 +78,8 @@ async function boot() {
   const terrainShadow = new TerrainShadow(engine.renderer, tex, regionSizes);
   const terrain = new Terrain(tex, regionSizes, world.meta.landcover.size);
   const sky = new Sky();
-  engine.scene.add(sky.mesh, terrain.mesh);
+  const waterSurface = new WaterSurface(terrain);
+  engine.scene.add(sky.mesh, terrain.mesh, waterSurface.mesh);
 
   loading.progress('Growing the Joshua tree forest', 0.95);
   const treeBuf = await fetch('data/trees.bin').then((r) => r.arrayBuffer());
@@ -178,6 +184,9 @@ async function boot() {
       atmosphere.rebuildTransmittance();
     }
     G.uCamPos.value.copy(cam.position);
+    const camWater = water.sample(cam.position.x, cam.position.z);
+    G.uUnderwater.value = camWater.mask > 0.3 && cam.position.y < camWater.level - 0.02 ? 1 : 0;
+    G.uCamWaterY.value = camWater.level;
     G.uCloudOffset.value.addScaledVector(G.uWind.value, dt * 4);
     atmosphere.update();
     terrainShadow.update();
@@ -206,6 +215,8 @@ async function boot() {
     engine,
     env,
     terrain,
+    water,
+    waterSurface,
     heightfield,
     trees,
     grass,
