@@ -129,6 +129,11 @@ async function boot() {
   const power = new PowerLines(world.osm, heightfield);
   const landmarks = new Landmarks(world.osm, heightfield);
   const laughlin = new Laughlin(heightfield);
+  for (let i = 0; i * 8 < Math.min(laughlin.glows.length, 128); i++) {
+    const g = laughlin.glows.slice(i * 8, i * 8 + 8);
+    G.uStripA.value[i].set(g[0], g[1], g[2], g[3]);
+    G.uStripB.value[i].set(g[4], g[5], g[6], g[7]);
+  }
   const props = new Props(world.osm, heightfield, power.pylons, (x, z) => landmarks.occupies(x, z) || laughlin.occupies(x, z));
   const lights = new LightPoints([...props.lights, ...landmarks.lights, ...laughlin.lights]);
   engine.scene.add(props.group, landmarks.group, laughlin.group, lights.points, power.mesh);

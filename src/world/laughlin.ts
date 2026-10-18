@@ -54,6 +54,8 @@ export class Laughlin {
   readonly group = new THREE.Group();
   /** Point lights (world xyz, rgb, size, blink) for the night-light renderer. */
   readonly lights: number[] = [];
+  /** River-mirrored facades: world x, z, y0, y1, then linear rgb and half-width. */
+  readonly glows: number[] = [];
   private sites: Rect[] = [];
   private s = new SolidBuilder();
   private sg = new SignBuilder();
@@ -192,6 +194,12 @@ export class Laughlin {
     }
   }
 
+  /** A lit facade `w` wide between local heights y0..y1 that the river mirrors at night. */
+  private glow(fr: Frame, x: number, z: number, w: number, y0: number, y1: number, r: number, g: number, b: number) {
+    const a = fr.p(x, y0, z);
+    this.glows.push(a.x, a.z, a.y, fr.p(x, y1, z).y, r, g, b, w / 2);
+  }
+
   private light(p: THREE.Vector3, r: number, g: number, b: number, size: number, blink = 0) {
     this.lights.push(p.x, p.y, p.z, r, g, b, size, blink);
   }
@@ -317,6 +325,9 @@ export class Laughlin {
     this.sign(fr, 'riversideRoof', nx, nTop + 4.2, nz - 1.7, 6.5, 1.6, FX.NONE, Math.PI);
     this.sign(fr, 'riversideRoof', nx, nTop + 4.2, nz + 1.7, 6.5, 1.6);
     this.beacons(fr, nx, nz, 72, nTop + 6);
+    this.glow(fr, nx, nz, 72, 12, nTop, 1, 0.72, 0.42);
+    this.glow(fr, nx, nz, 50, nTop + 1, nTop + 7, 2.4, 0.15, 0.12);
+    this.glow(fr, 0, 0, 120, 10.5, 12.7, 1.6, 0.08, 0.06);
     // South tower: slim, 28 floors of balconies with the red badge crown.
     const sx = -45, sz = 38;
     const sTop = this.slab(fr, sx, sz, 44, 24, 28, '#f4f2ec', FX.BALCONY, 0.7);
@@ -327,6 +338,8 @@ export class Laughlin {
     }
     this.outline(fr, sx, sz, 45, 25, sTop, sTop + 9, '#ff2a2a', 1.4);
     this.beacons(fr, sx, sz, 44, sTop + 9);
+    this.glow(fr, sx, sz, 44, 12, sTop, 1, 0.75, 0.45);
+    this.glow(fr, sx, sz, 44, sTop, sTop + 9, 2.2, 0.12, 0.1);
     // Classic car showroom glass on the river side and the Riverview restaurant deck.
     this.box(fr, 0, 0, 55.2, 80, 8, 0.3, '#2a3a44', { rough: 0.1, glow: 0.5 });
     this.box(fr, -30, 0, 60, 40, 0.6, 10, '#d8d2c4');
@@ -370,6 +383,7 @@ export class Laughlin {
       // Blue LED strips up the corners.
       for (const e of [-1, 1]) for (const f of [-1, 1]) this.tube(fr, new THREE.Vector3(x + e * (w / 2 + 1.9), 10, z + f * (d / 2 + 0.7)), new THREE.Vector3(x + e * (w / 2 + 1.9), top + 2, z + f * (d / 2 + 0.7)), 0.3, '#3aa8ff', 2.2);
       this.beacons(fr, x, z, w, top + 2.4);
+      this.glow(fr, x, z, w + 4, 10, top + 2, 0.35, 0.75, 1.6);
     }
     this.sign(fr, 'aquarius', 20, 23 * FLOOR - 4, 30 + 12.3, 10, 1.4);
     this.sign(fr, 'aquarius', 0, 5, 60.4, 5.5, 1.5);
@@ -400,6 +414,8 @@ export class Laughlin {
     this.sign(fr, 'edgewater', 0, top + 6, -D / 2 - 0.3, 7.5, 1.5, FX.NONE, Math.PI);
     this.box(fr, 0, top + 2.6, 0, 66, 7, 1, '#d8cba8');
     this.beacons(fr, 0, 0, W, top + 9);
+    this.glow(fr, 0, 0, W, 4, top, 1, 0.78, 0.5);
+    this.glow(fr, 0, 0, 60, top + 3, top + 9, 0.3, 0.55, 2.2);
     // Second tower and the low white riverfront casino.
     const tf = this.site(31468, 33765, 0, 23, 36);
     this.slab(tf, 0, 0, 40, 66, 9, '#e2d6ba', FX.WINDOWS, 0.5);
@@ -470,6 +486,8 @@ export class Laughlin {
       this.s.add(dome, fr.at(e * 52, top + 11.5, 0), '#2a7a5a', { rough: 0.5, glow: 0.6, fx: FX.WASH }, this.seed);
     }
     this.beacons(fr, 0, 0, W, top + 14);
+    this.glow(fr, 0, 0, W, 4, top + 6, 0.35, 1.2, 0.55);
+    this.glow(fr, 0, 0, cw, 4, top + 14, 1.6, 1.1, 0.4);
     // Low casino and porte-cochère toward Casino Drive.
     const cf = this.site(31197, 34099, 1.44, 86, 60);
     this.box(cf, 0, -2, 0, 160, 11, 110, '#e8e2d2');
@@ -530,6 +548,7 @@ export class Laughlin {
     this.s.add(crown, fr.at(0, top, 0), '#d8b48c', { rough: 0.7 }, this.seed);
     this.sign(fr, 'riverLodge', 0, top + 2.6, D / 2 + 1, 4.2, 1.4);
     this.beacons(fr, 0, 0, W, top + 6);
+    this.glow(fr, 0, 0, W, 4, top + 4, 1, 0.7, 0.42);
     const cf = this.site(31245, 34995, 1.925, 90, 50);
     this.box(cf, 0, -2, 0, 160, 10, 90, '#d2b48c');
     const roof = new THREE.CylinderGeometry(1, 1, 160, 4, 1).rotateZ(Math.PI / 2).rotateX(Math.PI / 4).scale(1, 5, 46);
@@ -575,6 +594,7 @@ export class Laughlin {
         this.sign(fr, 'harrahs', alongX ? 0 : v, top + 4.6, alongX ? v : 0, 5.5, 1.5, FX.NONE, alongX ? (f > 0 ? 0 : Math.PI) : f > 0 ? Math.PI / 2 : -Math.PI / 2);
       }
       this.light(fr.p(0, top + 7, 0), 1, 0.08, 0.04, 3.2, 1);
+      this.glow(fr, 0, 0, Math.max(w, d), 4, top + 6, 1, 0.66, 0.4);
     }
     const cf = this.site(31135, 35572, 0.004, 150, 62);
     this.box(cf, 0, -2, -10, 280, 12, 90, '#d8b898');
