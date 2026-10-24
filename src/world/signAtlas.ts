@@ -247,6 +247,26 @@ const SIGNS: SignSpec[] = [
     },
   },
   {
+    // Red tower panel with the golden arches.
+    name: 'mcdTower',
+    w: 320,
+    h: 320,
+    draw(g, w, h) {
+      g.fillStyle = '#d0201a';
+      g.fillRect(0, 0, w, h);
+      g.strokeStyle = '#ffc72c';
+      g.lineWidth = w * 0.075;
+      g.lineCap = 'butt';
+      for (const cx of [w * 0.35, w * 0.65]) {
+        const half = w * 0.15;
+        g.beginPath();
+        g.moveTo(cx - half, h * 0.84);
+        g.bezierCurveTo(cx - half, h * 0.02, cx + half, h * 0.02, cx + half, h * 0.84);
+        g.stroke();
+      }
+    },
+  },
+  {
     name: 'mcdArches',
     w: 400,
     h: 240,
