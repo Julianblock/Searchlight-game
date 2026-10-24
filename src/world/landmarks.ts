@@ -523,8 +523,8 @@ export class Landmarks {
       new THREE.Vector2(-2.3, 3.55), new THREE.Vector2(-3.05, 2.5), new THREE.Vector2(-2.75, 0.9),
     ]);
     const slab = new THREE.ExtrudeGeometry(rock, { depth: 1.1, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.12, bevelSegments: 1 }).translate(0, 0, -0.55);
-    this.s.add(slab, fr.at(0, 0.7, 0), '#c2a47c', { rough: 1 }, this.seed);
-    this.sign(fr, 'welcome', 0, 2.42, 0.69, 2.9, 0.15);
+    this.s.add(slab, fr.at(0, 0.7, 0), '#c2a47c', { rough: 1, fx: FX.WASH, glow: 0.9 }, -16);
+    this.sign(fr, 'welcome', 0, 2.42, 0.69, 2.9, 0.6);
     // Rubble mound the slab is bedded in.
     const stone = new THREE.DodecahedronGeometry(0.75, 0);
     for (let i = 0; i < 22; i++) {
