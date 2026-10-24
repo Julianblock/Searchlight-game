@@ -501,7 +501,7 @@ export class Landmarks {
     this.box(fr, 5, -0.4, 2, 5, 0.12, 1.1, '#4a3a2a');
   }
 
-  /** Routed-timber welcome sign beside US-95 facing traffic entering town. */
+  /** The welcome monument beside US-95: a tan boulder slab with a green slate panel, on a rock mound. */
   private welcome(x: number, z: number, dir: number) {
     this.seed = 16;
     const h = this.nearestHighway(x, z);
@@ -510,11 +510,25 @@ export class Landmarks {
     const pz = h.pz + side.z * 15;
     // Face oncoming traffic: southbound drivers see the north sign, and vice versa.
     const fr = new Frame(px, this.hf.height(px, pz), pz, -h.tx * dir, -h.tz * dir);
-    for (const sx of [-3, 3]) this.box(fr, sx, -0.5, 0, 0.35, 5.2, 0.35, '#4a3420');
-    this.box(fr, 0, 1.3, -0.1, 7.6, 3.8, 0.2, '#5e4028');
-    this.sign(fr, 'welcome', 0, 3.2, 0, 3.6, 0.15);
-    // Uplights so it reads at night.
-    this.light(fr.p(-1.5, 0.3, 1.2), 1, 0.8, 0.5, 0.8);
-    this.light(fr.p(1.5, 0.3, 1.2), 1, 0.8, 0.5, 0.8);
+    const rock = new THREE.Shape([
+      new THREE.Vector2(-2.9, 0), new THREE.Vector2(2.9, 0), new THREE.Vector2(3.15, 1.7), new THREE.Vector2(2.5, 3.3),
+      new THREE.Vector2(-2.3, 3.55), new THREE.Vector2(-3.05, 2.5), new THREE.Vector2(-2.75, 0.9),
+    ]);
+    const slab = new THREE.ExtrudeGeometry(rock, { depth: 1.1, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.12, bevelSegments: 1 }).translate(0, 0, -0.55);
+    this.s.add(slab, fr.at(0, 0.7, 0), '#c2a47c', { rough: 1 }, this.seed);
+    this.sign(fr, 'welcome', 0, 2.42, 0.69, 2.9, 0.15);
+    // Rubble mound the slab is bedded in.
+    const stone = new THREE.DodecahedronGeometry(0.75, 0);
+    for (let i = 0; i < 22; i++) {
+      const a = (i / 22) * Math.PI * 2;
+      const r = (i % 2 ? 3.3 : 2.4) + Math.sin(i * 3.7) * 0.4;
+      const m = fr.at(Math.cos(a) * r, i % 2 ? -0.1 : 0.35, Math.sin(a) * r * 0.5, i).multiply(new THREE.Matrix4().makeScale(1 + (i % 3) * 0.25, 0.75, 1));
+      this.s.add(stone, m, ['#8a6e52', '#9a826a', '#7a6450'][i % 3], { rough: 1 }, this.seed);
+    }
+    const mound = new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(3.6, 0.9, 1.8);
+    this.s.add(mound, fr.at(0, -0.2, 0), '#8e765c', { rough: 1 }, this.seed);
+    // The floodlight perched on top.
+    this.box(fr, 0.6, 4.35, 0.2, 0.7, 0.45, 0.5, '#2a2a2a', { fx: FX.METAL });
+    this.light(fr.p(0.6, 4.3, 0.8), 1, 0.85, 0.6, 1.2);
   }
 }
