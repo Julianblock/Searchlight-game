@@ -272,6 +272,24 @@ export class Landmarks {
     // Rooftop units.
     for (const [ux, uz] of [[8, -6], [15, 2]]) this.box(fr, ux, 7.8, uz, 2.6, 1.4, 2, '#b4b4ae', { fx: FX.METAL });
     this.roadhousePylon(hwy, new THREE.Vector3(x - hwy.px, 0, z - hwy.pz).normalize());
+    // White three-rail vinyl fence along the highway, broken for the two driveways.
+    const base = fr.p(0, 0, 0).y;
+    const fz = hwy.d - 9;
+    for (const [a, b] of [[-46, -30], [-17, 22], [34, 46]]) {
+      const n = Math.round((b - a) / 2.4);
+      const ys: number[] = [];
+      for (let i = 0; i <= n; i++) {
+        const px = a + ((b - a) * i) / n;
+        const p = fr.p(px, 0, fz);
+        ys.push(this.hf.height(p.x, p.z) - base);
+        this.box(fr, px, ys[i] - 0.4, fz, 0.14, 1.65, 0.14, '#f2f0ea');
+      }
+      for (let i = 0; i < n; i++) {
+        const px = a + ((b - a) * (i + 0.5)) / n;
+        const y = (ys[i] + ys[i + 1]) / 2;
+        for (const ry of [0.35, 0.72, 1.1]) this.box(fr, px, y + ry, fz + 0.09, (b - a) / n, 0.12, 0.05, '#f2f0ea');
+      }
+    }
     for (const [lx, lz] of [[-22, 26], [6, 30], [24, 24], [-30, 8]]) this.lotLight(fr, lx, lz);
     this.light(fr.p(dx, 3.3, dzf + 1.5), 1, 0.8, 0.5, 4);
     this.light(fr.p(-18, 3.8, zf + 1.5), 1, 0.8, 0.5, 3);
