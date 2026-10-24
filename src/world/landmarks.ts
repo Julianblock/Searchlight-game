@@ -415,8 +415,8 @@ export class Landmarks {
     this.seed = 12;
     const fr = new Frame(x, this.hf.height(x, z), z, 1, 0.3);
     this.sites.push({ x, z, radius: 10 });
-    const wood = '#6a5238';
-    const H = 14;
+    const wood = '#5e4a36';
+    const H = 17;
     const sb = (a: THREE.Vector3, b: THREE.Vector3, r: number, col = wood) => {
       const d = b.clone().sub(a);
       const len = d.length();
@@ -443,8 +443,12 @@ export class Landmarks {
     const wheel = new THREE.TorusGeometry(1.1, 0.09, 6, 20);
     this.s.add(wheel, fr.at(0, H + 0.6, 0), '#3a2a20', { rough: 0.5, fx: FX.METAL }, this.seed);
     this.box(fr, 0, H - 0.3, 0, 2.2, 0.4, 2.2, wood);
-    // Ore bin and tin hoist house.
-    this.box(fr, 4.5, -0.5, 0, 3.4, 5, 3.4, '#5e4a34');
+    // Plank ore house boxing in the foot of the tower, with a chute out the front.
+    this.box(fr, 0.6, -0.5, 0, 5.2, 5.6, 4.6, '#54402c', { rough: 1 });
+    this.box(fr, 0.6, 5.1, 0, 5.8, 0.3, 5.2, '#3e3024', { rough: 1 });
+    for (let i = 0; i < 6; i++) this.box(fr, -1.95 + i * 1.02, -0.5, 2.32, 0.08, 5.6, 0.06, '#3e3024');
+    const chute = new THREE.BoxGeometry(1.2, 0.5, 3).translate(0, 0, 1.5).rotateX(0.5);
+    this.s.add(chute, fr.at(3.5, 2.6, 0, Math.PI / 2), '#4a3826', { rough: 1 }, this.seed);
     this.box(fr, 0, -0.5, -11, 6, 4, 5, '#8a7a68', { fx: FX.METAL });
     // Tailings dump: pale yellow-grey cone spilling downslope.
     const dump = new THREE.ConeGeometry(14, 6, 18, 1).scale(1, 1, 0.7);
