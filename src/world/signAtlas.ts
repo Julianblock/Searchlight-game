@@ -267,24 +267,6 @@ const SIGNS: SignSpec[] = [
     },
   },
   {
-    name: 'mcdArches',
-    w: 400,
-    h: 240,
-    draw(g, w, h) {
-      g.fillStyle = '#2a1a10';
-      g.fillRect(0, 0, w, h);
-      g.strokeStyle = '#ffc72c';
-      g.lineWidth = w * 0.09;
-      for (const cx of [w * 0.33, w * 0.67]) {
-        g.beginPath();
-        const half = w * 0.16;
-        g.moveTo(cx - half, h * 0.95);
-        g.bezierCurveTo(cx - half, h * 0.0, cx + half, h * 0.0, cx + half, h * 0.95);
-        g.stroke();
-      }
-    },
-  },
-  {
     name: 'chevron',
     w: 400,
     h: 440,
