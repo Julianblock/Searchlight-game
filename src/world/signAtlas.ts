@@ -61,12 +61,129 @@ const SIGNS: SignSpec[] = [
     frames: 4,
     draw(g, w, h, f) {
       const msgs = [
-        ['LOOSEST SLOTS', 'ON HIGHWAY 95'],
+        ['WELCOME TO', "TERRIBLE'S ROAD HOUSE"],
         ["DENNY'S", 'OPEN 24 HOURS'],
-        ['WELCOME TO', 'SEARCHLIGHT'],
+        ['LOOSEST SLOTS', 'ON HIGHWAY 95'],
         ['VIDEO POKER', 'KENO · BAR'],
       ];
       dotMatrix(g, w, h, msgs[f], f === 1 ? '#ffd040' : '#ff8a1c');
+    },
+  },
+  {
+    // The pylon's wood-grain board: Terrible's cowboy, red name, "Road House" in white script.
+    name: 'roadhouse',
+    w: 640,
+    h: 400,
+    draw(g, w, h) {
+      g.fillStyle = '#e8dcc4';
+      g.fillRect(0, 0, w, h);
+      for (let y = 14; y < h - 14; y += 32) {
+        g.fillStyle = (y / 32) % 2 < 1 ? '#5a3220' : '#4e2a1a';
+        g.fillRect(14, y, w - 28, 31);
+        g.strokeStyle = 'rgba(30,14,6,0.45)';
+        g.lineWidth = 2;
+        for (let k = 0; k < 3; k++) {
+          g.beginPath();
+          const yy = y + 6 + k * 9;
+          g.moveTo(14, yy);
+          for (let x = 14; x < w - 14; x += 40) g.lineTo(x, yy + Math.sin(x * 0.03 + y + k) * 3);
+          g.stroke();
+        }
+      }
+      // Cowboy: hat brim, crown and a pale face.
+      g.fillStyle = '#f2ece0';
+      g.beginPath();
+      g.arc(w * 0.17, h * 0.26, h * 0.05, 0, 7);
+      g.fill();
+      g.fillStyle = '#141414';
+      g.fillRect(w * 0.11, h * 0.165, w * 0.12, h * 0.025);
+      g.fillRect(w * 0.135, h * 0.1, w * 0.07, h * 0.07);
+      g.fillStyle = '#d42a24';
+      fitText(g, "TERRIBLE'S", w * 0.58, h * 0.22, w * 0.6, (p) => `bold ${p}px ${SERIF}`, h * 0.13);
+      g.fillStyle = '#f4efe6';
+      fitText(g, 'Road House', w / 2, h * 0.53, w * 0.86, (p) => `italic bold ${p}px ${SCRIPT}`, h * 0.32);
+      fitText(g, 'SEARCHLIGHT', w / 2, h * 0.82, w * 0.5, (p) => `bold ${p}px ${SANS}`, h * 0.1);
+    },
+  },
+  {
+    // Red oval of chaser bulbs around the board, its arrowhead pointing into the lot.
+    name: 'roadhouseRing',
+    w: 1000,
+    h: 600,
+    cutout: true,
+    draw(g, w, h) {
+      const cx = w * 0.46, cy = h / 2, rx = w * 0.42, ry = h * 0.44;
+      g.strokeStyle = '#d0141a';
+      g.lineWidth = h * 0.09;
+      g.beginPath();
+      g.ellipse(cx, cy, rx, ry, 0, Math.PI * 0.06, Math.PI * 1.94);
+      g.stroke();
+      g.fillStyle = '#d0141a';
+      g.beginPath();
+      g.moveTo(w * 0.99, h * 0.36);
+      g.lineTo(w * 0.8, h * 0.18);
+      g.lineTo(w * 0.8, h * 0.54);
+      g.closePath();
+      g.fill();
+      g.fillStyle = '#fff2c8';
+      for (let i = 0; i < 46; i++) {
+        const a = Math.PI * 0.08 + (i / 45) * Math.PI * 1.84;
+        g.beginPath();
+        g.arc(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, h * 0.017, 0, 7);
+        g.fill();
+      }
+    },
+  },
+  {
+    name: 'dennysHex',
+    w: 520,
+    h: 240,
+    draw(g, w, h) {
+      g.fillStyle = '#000';
+      g.fillRect(0, 0, w, h);
+      const hex = (inset: number, color: string) => {
+        g.fillStyle = color;
+        g.beginPath();
+        g.moveTo(w * 0.12 + inset, inset);
+        g.lineTo(w * 0.88 - inset, inset);
+        g.lineTo(w - inset, h / 2);
+        g.lineTo(w * 0.88 - inset, h - inset);
+        g.lineTo(w * 0.12 + inset, h - inset);
+        g.lineTo(inset, h / 2);
+        g.closePath();
+        g.fill();
+      };
+      hex(0, '#e3001b');
+      hex(10, '#ffd200');
+      g.save();
+      g.fillStyle = '#e3001b';
+      g.translate(w / 2, h * 0.52);
+      g.transform(1, 0, -0.12, 1, 0, 0);
+      fitText(g, "Denny's", 0, 0, w * 0.72, (p) => `bold ${p}px ${SERIF}`, h * 0.5);
+      g.restore();
+    },
+  },
+  {
+    name: 'americasDiner',
+    w: 1100,
+    h: 100,
+    cutout: true,
+    draw(g, w, h) {
+      g.fillStyle = '#f6f4ee';
+      fitText(g, "AMERICA'S DINER", w / 2, h / 2, w * 0.98, (p) => `${p}px ${SANS}`, h * 0.86);
+    },
+  },
+  {
+    name: 'casinoBoard',
+    w: 520,
+    h: 140,
+    draw(g, w, h) {
+      g.fillStyle = '#e8dcc4';
+      g.fillRect(0, 0, w, h);
+      g.fillStyle = '#5a3220';
+      g.fillRect(10, 10, w - 20, h - 20);
+      g.fillStyle = '#f6f2ea';
+      fitText(g, 'CASINO', w / 2, h / 2, w * 0.8, (p) => `bold ${p}px ${SERIF}`, h * 0.6);
     },
   },
   {
