@@ -8,7 +8,7 @@ import { LC, type OsmData } from './meta';
 import { latticeGeometry, poleGeometry, PYLON, type Pylon } from './powerLines';
 
 export const KIND = { HOUSE: 0, SHED: 1, TANK: 2, TOWER: 3, HUT: 4, VEHICLE: 5, TRAILER: 6, STUCCO: 7 } as const;
-const GEO = { HOUSE: 0, SHED: 1, TANK: 2, TOWER: 3, LATTICE: 4, POLE: 5, TRAILER: 6, FLAT: 7 } as const;
+const GEO = { HOUSE: 0, SHED: 1, TANK: 2, TOWER: 3, LATTICE: 4, POLE: 5, TRAILER: 6, FLAT: 7, LAMP: 8 } as const;
 
 function hash(n: number) {
   const s = Math.sin(n * 91.345 + 47.853) * 43758.5453;
@@ -95,6 +95,15 @@ function towerGeometry(): THREE.BufferGeometry {
   return sb.build();
 }
 
+/** Cobra-head streetlight in metres: tapered steel pole, mast arm along +x, luminaire head. */
+function lampGeometry(): THREE.BufferGeometry {
+  const pole = new THREE.CylinderGeometry(0.09, 0.15, 10.2, 8).translate(0, 5.1, 0);
+  const arm = new THREE.CylinderGeometry(0.05, 0.06, 3.3, 6).rotateZ(-Math.PI / 2 + 0.12).translate(1.6, 9.95, 0);
+  const head = new THREE.BoxGeometry(0.95, 0.2, 0.42).translate(3.5, 10.12, 0);
+  const base = new THREE.CylinderGeometry(0.3, 0.32, 0.7, 8).translate(0, 0.35, 0);
+  return merge([withPart(pole, 2), withPart(arm, 2), withPart(base, 1), withPart(head, 1)]);
+}
+
 const PROP_TILE = 2000;
 
 interface Batch {
@@ -131,7 +140,7 @@ export class Props {
     this.shadowMaterial.uniforms = this.material.uniforms;
     this.shadowMaterial.defines = { SHADOW_PASS: '' };
 
-    const geos = [houseGeometry(), shedGeometry(), tankGeometry(), towerGeometry(), latticeGeometry(), poleGeometry(), trailerGeometry(), flatGeometry()];
+    const geos = [houseGeometry(), shedGeometry(), tankGeometry(), towerGeometry(), latticeGeometry(), poleGeometry(), trailerGeometry(), flatGeometry(), lampGeometry()];
     const data: number[][][] = geos.map(() => []);
     const c = new THREE.Color();
     const push = (kind: number, geo: number, x: number, z: number, w: number, h: number, d: number, ang: number, wall: string, roof: string, lit: number, seed: number) => {
@@ -216,12 +225,13 @@ export class Props {
           const lc = hf.landcover(cx, cz);
           if (lc < LC.URBAN_LOW || lc > LC.URBAN_HIGH) continue;
           lamp += 26;
-          // A few sodium cobra-heads at the town's main corners only.
-          if (!res && lamp > 120) {
+          // Cobra-heads every other lot along US-95 through town, sparser on side streets.
+          if (!res && lamp > (road.kind === 'trunk' ? 50 : 120)) {
             lamp = 0;
             const sx = cx - uz * 9;
             const sz = cz + ux * 9;
-            this.lights.push(sx, hf.height(sx, sz) + 9, sz, 1, 0.5, 0.14, 1.6, 0);
+            push(KIND.TOWER, GEO.LAMP, sx, sz, 1, 1, 1, ang - Math.PI / 2, '#8a8c8e', '#4a4c4e', 0, 0.5);
+            this.lights.push(cx - uz * 5.6, hf.height(sx, sz) + 9.6, cz + ux * 5.6, 1, 0.55, 0.18, 1.6, 0);
           }
           if (!res) continue;
           for (const side of [-1, 1]) {
@@ -279,7 +289,7 @@ export class Props {
         const wall = new Float32Array(n * 4);
         const roof = new Float32Array(n * 4);
         const box = new THREE.Box3();
-        const metres = k === GEO.LATTICE || k === GEO.POLE;
+        const metres = k === GEO.LATTICE || k === GEO.POLE || k === GEO.LAMP;
         rows.forEach((r, i) => {
           t0.set(r.slice(0, 4), i * 4);
           t1.set(r.slice(4, 8), i * 4);
