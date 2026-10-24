@@ -386,9 +386,13 @@ export class Landmarks {
   private postOffice(x: number, z: number) {
     this.seed = 10;
     const { fr } = this.frameFacing(x, z, 13);
-    this.box(fr, 0, -1.5, 0, 20, 6, 13, '#c8a888');
-    this.box(fr, 0, 4.3, 0, 20.6, 0.5, 13.6, '#ece6da');
-    this.sign(fr, 'postOffice', 0, 3.6, 6.51, 1.1, 0.3);
+    // Red-brown board walls under a low hipped roof with deep eaves.
+    this.box(fr, 0, -1.5, 0, 20, 5.6, 13, '#7a4434', { rough: 0.9 });
+    this.box(fr, 0, 3.9, 0, 21.4, 0.35, 14.4, '#5a2a1c');
+    const roof = new THREE.ConeGeometry(1, 1, 4, 1).rotateY(Math.PI / 4).scale(23.6 / Math.SQRT2, 2.4, 16.6 / Math.SQRT2).translate(0, 0.5 * 2.4, 0);
+    this.s.add(roof, fr.at(0, 4.2, 0), '#a8885e', { rough: 0.95 }, this.seed);
+    this.sign(fr, 'postOffice', -2, 2.9, 6.51, 0.9, 0.3);
+    this.box(fr, 6.5, -0.5, 7.4, 0.6, 1.3, 0.5, '#1f3f8f', { fx: FX.METAL });
     this.storefront(fr, 0, 6.56, 6, 2.4, 0.4);
     // Flagpole and flag.
     this.cyl(fr, 8, -0.5, 10, 0.08, 0.05, 10.5, '#d8d8d8', { fx: FX.METAL }, 6);
