@@ -268,7 +268,7 @@ export class Landmarks {
     this.box(fr, 0, -1, 0, 0.9, 17.8, 0.36, wood, { rough: 0.95 });
     this.box(fr, 0, -1, 0, 1.6, 1.6, 1.6, '#8a7a68', { rough: 1 });
     // Denny's hex.
-    this.box(fr, 0, 2.5, 0, 4.6, 2.2, 0.4, '#ffd200');
+    this.box(fr, 0, 2.6, 0, 3.6, 2, 0.4, '#ffd200');
     both('dennysHex', 0, 3.6, 2.4, 0.22, 1.3);
     // Message board with neon wagon-wheel halves hanging off its lower corners.
     const ledH = 3, ledW = ledH * this.rects.terriblesLED.aspect;
