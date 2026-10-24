@@ -138,9 +138,8 @@ const SIGNS: SignSpec[] = [
     name: 'dennysHex',
     w: 520,
     h: 240,
+    cutout: true,
     draw(g, w, h) {
-      g.fillStyle = '#000';
-      g.fillRect(0, 0, w, h);
       const hex = (inset: number, color: string) => {
         g.fillStyle = color;
         g.beginPath();
