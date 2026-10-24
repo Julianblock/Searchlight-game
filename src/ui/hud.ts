@@ -30,6 +30,7 @@ export class Hud {
     <tr><td><kbd>V</kbd></td><td>Call</td></tr>
     <tr><td><kbd>G</kbd></td><td>Land and take the pickup</td></tr>
     <tr><td><kbd>M</kbd></td><td>Mute sound</td></tr>
+    <tr><td><kbd>K</kbd></td><td>Full screen</td></tr>
     <tr><td><kbd>T</kbd></td><td>Toggle HUD</td></tr>
     <tr><td><kbd>Esc</kbd></td><td>Menu</td></tr>
     </table><p style="font:300 12px/1.6 var(--sans);color:var(--ink-dim);margin:16px 0 0;max-width:380px">
@@ -47,6 +48,7 @@ export class Hud {
     <tr><td><kbd>V</kbd></td><td>Horn</td></tr>
     <tr><td><kbd>G</kbd></td><td>Get out and fly</td></tr>
     <tr><td><kbd>M</kbd></td><td>Mute sound</td></tr>
+    <tr><td><kbd>K</kbd></td><td>Full screen</td></tr>
     <tr><td><kbd>Esc</kbd></td><td>Menu</td></tr>
     </table><p style="font:300 12px/1.6 var(--sans);color:var(--ink-dim);margin:16px 0 0;max-width:380px">
     US-95 runs straight through Searchlight past Terrible's and McDonald's. Cottonwood Cove Road drops 14 miles east to Lake Mohave. Off the asphalt the truck crawls through sandy washes and over rock, and floods out in a running wash after a monsoon storm.</p></div>`;
