@@ -702,13 +702,19 @@ export class Laughlin {
     this.light(wf.p(0, 0.4, 2), 1, 0.85, 0.6, 1.5);
   }
 
-  /** The Riverwalk: white rail along the bank from the bridge to Harrah's, lamps and palms. */
+  /**
+   * The Riverwalk from the bridge to Harrah's: rock-clad pillars carrying two
+   * timber rails, a rose-paved path, and dark green lamp posts with clusters of
+   * white globes.
+   */
   private riverwalk() {
     this.seed = 112;
     const fr = new Frame(0, 0, 0, 0, 1);
+    const globe = new THREE.SphereGeometry(0.34, 10, 8);
+    const pillar = new THREE.BoxGeometry(0.62, 1.15, 0.62).translate(0, 0.575, 0);
     let prev: THREE.Vector3 | null = null;
     let k = 0;
-    for (let z = 32560; z <= 35680; z += 3) {
+    for (let z = 32560; z <= 35680; z += 5) {
       const b = bankAt(z);
       const x = b.x - b.nx * 4;
       const zz = z - b.nz * 4;
@@ -718,20 +724,35 @@ export class Laughlin {
         continue;
       }
       const p = new THREE.Vector3(x, y, zz);
-      this.box(fr, x, y - 0.3, zz, 0.14, 1.4, 0.14, '#f4f4f0', { rough: 0.5 });
+      this.s.add(pillar, fr.at(x, y - 0.25, zz, k * 0.7), k % 2 ? '#8c7a66' : '#7e6c5a', { rough: 1 }, this.seed);
+      this.box(fr, x, y + 0.88, zz, 0.72, 0.1, 0.72, '#9a8a76', { rough: 1 });
       if (prev) {
-        for (const h of [0.55, 1.05]) this.tube(fr, prev.clone().setY(prev.y + h), p.clone().setY(y + h), 0.09, '#f4f4f0', 0);
+        for (const h of [0.45, 0.85]) this.tube(fr, prev.clone().setY(prev.y + h), p.clone().setY(y + h), 0.16, '#7a5a3a', 0);
+        // Paving between the rail and the casinos, laid in short slabs that follow the ground.
+        const mx = (prev.x + x) / 2 - b.nx * 2.2;
+        const mz = (prev.z + zz) / 2 - b.nz * 2.2;
+        const paver = new THREE.BoxGeometry(3.8, 0.3, prev.distanceTo(p) + 0.3);
+        const yaw = Math.atan2(x - prev.x, zz - prev.z);
+        this.s.add(paver, fr.at(mx, this.hf.height(mx, mz) - 0.12, mz, yaw), '#b88a78', { rough: 0.95 }, this.seed);
       }
-      if (k % 9 === 0) {
-        const lx = x - b.nx * 2.5;
-        const lz = zz - b.nz * 2.5;
+      if (k % 5 === 0) {
+        // Lamp post: four globes on scrolled arms round a taller centre globe.
+        const lx = x - b.nx * 0.2;
+        const lz = zz - b.nz * 0.2;
         const ly = this.hf.height(lx, lz);
-        this.cyl(fr, lx, ly - 0.3, lz, 0.09, 0.07, 4.2, '#2a3a2e', { fx: FX.METAL }, 6);
-        const globe = new THREE.SphereGeometry(0.32, 8, 6);
-        this.s.add(globe, fr.at(lx, ly + 4.2, lz), '#fff4d8', { glow: 1.6 }, this.seed);
-        this.light(new THREE.Vector3(lx, ly + 4.2, lz), 1, 0.78, 0.45, 1.3);
+        this.cyl(fr, lx, ly - 0.3, lz, 0.16, 0.08, 4.4, '#1e3a2a', { rough: 0.5, fx: FX.METAL }, 8);
+        this.cyl(fr, lx, ly - 0.3, lz, 0.28, 0.2, 0.9, '#1e3a2a', { rough: 0.5, fx: FX.METAL }, 8);
+        for (let i = 0; i < 4; i++) {
+          const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+          const gx = lx + Math.cos(a) * 0.6;
+          const gz = lz + Math.sin(a) * 0.6;
+          this.tube(fr, new THREE.Vector3(lx, ly + 3.4, lz), new THREE.Vector3(gx, ly + 3.75, gz), 0.07, '#1e3a2a', 0);
+          this.s.add(globe, fr.at(gx, ly + 4.05, gz), '#fff6e4', { glow: 1.5 }, this.seed);
+        }
+        this.s.add(globe, fr.at(lx, ly + 4.45, lz), '#fff6e4', { glow: 1.5 }, this.seed);
+        this.light(new THREE.Vector3(lx, ly + 4.1, lz), 1, 0.85, 0.62, 1.6);
       }
-      if (k % 6 === 3 && !this.occupies(x - b.nx * 8, zz - b.nz * 8)) this.palm(x - b.nx * 8, zz - b.nz * 8, 11 + (k % 5), k * 0.37);
+      if (k % 4 === 2 && !this.occupies(x - b.nx * 8, zz - b.nz * 8)) this.palm(x - b.nx * 8, zz - b.nz * 8, 11 + (k % 5), k * 0.37);
       prev = p;
       k++;
     }
