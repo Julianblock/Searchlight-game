@@ -100,6 +100,14 @@ void main() {
   vec3 emit = vec3(0.0);
   if (fx > 3.5) {
     vec3 wash = vMat.w < 0.0 ? vec3(1.0, 0.86, 0.7) : clamp(abs(mod(fract(vMat.w) * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0) * 0.8 + 0.2;
+    float wall = 1.0;
+    // Floodlights at the foot of the wall throw overlapping cones up the face.
+    float cone = 1.0;
+    if (abs(n.y) < 0.4) {
+      vec2 tw = normalize(vec2(-n.z, n.x));
+      float c = 0.5 + 0.5 * cos(dot(vWorld.xz, tw) * 6.2832 / 11.0);
+      cone = 0.62 + 0.38 * c * c;
+    }
     if (fx < 6.5 && abs(n.y) < 0.4) {
       // Room grid on the facade: bays 3.6 m wide, floors 3.1 m apart.
       vec2 t2 = normalize(vec2(-n.z, n.x));
@@ -136,8 +144,10 @@ void main() {
       float lit = mix(0.55, step(0.45, h), aa) * win;
       vec3 lc = mix(vec3(1.0, 0.7, 0.4), vec3(0.75, 0.85, 1.0), step(0.88, h)) * (0.45 + 0.55 * fract(h * 7.31));
       emit += lc * lit * uNight * 0.3 * uInvExposure;
+      wall = 1.0 - win * (fx > 4.5 && fx < 5.5 ? 0.55 : 0.8);
     }
-    emit += wash * vColor * glow * uNight * 0.16 * uInvExposure;
+    vec3 lamp = fx > 4.5 && fx < 5.5 ? mix(vColor, vec3(0.92), 0.6) : vColor;
+    emit += wash * lamp * glow * cone * wall * uNight * 0.2 * uInvExposure;
   } else if (glow > 0.0) {
     float on = 1.0;
     if (fx > 1.5 && fx < 2.5) {
