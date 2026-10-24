@@ -226,32 +226,66 @@ export class Landmarks {
   private terribles(x: number, z: number) {
     this.seed = 1;
     const { fr, hwy } = this.frameFacing(x, z, 34);
-    const W = 46, D = 30, H = 7;
-    const zf = D / 2;
-    // Roadhouse: tan stucco with a red parapet and a gold stripe.
-    this.box(fr, 0, -1.5, 0, W, H + 1.5, D, '#d6bf98');
-    this.box(fr, 0, H - 0.2, 0, W + 0.4, 1.6, D + 0.4, '#a8141a', { rough: 0.6 });
-    this.box(fr, 0, H - 0.5, zf + 0.21, W + 0.4, 0.3, 0.05, '#f0b020');
-    this.box(fr, 0, H + 1.3, 0, W - 1, 0.1, D - 1, '#cfccc4');
-    // Western false front over the entry, carrying the big wordmark.
-    this.box(fr, -4, H, zf - 0.5, 18, 4.6, 1, '#a8141a');
-    this.sign(fr, 'terribles', -4, H + 2.3, zf, 4.2, 1.2);
-    // Porte-cochère with chasing CASINO marquee.
-    this.box(fr, -4, 4.6, zf + 4.5, 16, 0.9, 9, '#a8141a');
-    this.box(fr, -4, 4.56, zf + 4.5, 15, 0.05, 8, '#fff0d0', { glow: 1.2 });
-    for (const sx of [-7, -1, 5]) this.box(fr, sx - 0.5 * Math.sign(sx), -1, zf + 8.4, 0.7, 5.7, 0.7, '#d6bf98');
-    this.sign(fr, 'casino', -4, 5.05, zf + 9, 0.85, 1.4, FX.CHASE);
-    this.storefront(fr, -4, zf + 0.06, 12, 3);
-    // Denny's wing at the north end with its own sign and booths in the windows.
-    this.box(fr, 15, H + 0.3, zf - 0.5, 12, 3.2, 1, '#ffd200');
-    this.sign(fr, 'dennys', 15, H + 1.9, zf, 2.8, 1.2);
-    this.storefront(fr, 15, zf + 0.06, 13, 2.6, 0.9);
-    this.storefront(fr, -18, zf + 0.06, 6, 2.4, 0.5);
+    const zf = 15;
+    // Casino: stacked-stone walls under a red standing-seam hip roof.
+    this.box(fr, -11, -1.5, 0, 24, 5.7, 30, '#8c7e6c', { rough: 1 });
+    this.box(fr, -11, -1.5, 0, 24.3, 2.2, 30.3, '#77695a', { rough: 1 });
+    this.box(fr, -11, 4, 0, 25.6, 0.3, 31.6, '#3a2a1e');
+    this.box(fr, -11, 3.85, zf + 0.82, 25.6, 0.12, 0.08, '#ffe2a0', { glow: 1.3 });
+    const hip = new THREE.ConeGeometry(1, 1, 4, 1).rotateY(Math.PI / 4).scale(26 / Math.SQRT2, 3.4, 32 / Math.SQRT2).translate(0, 1.7, 0);
+    this.s.add(hip, fr.at(-11, 4.25, 0), '#86281f', { rough: 0.45, fx: FX.METAL }, this.seed);
+    // Entry: stone vestibule with a red gable and the brown CASINO board.
+    this.box(fr, -9, -1, zf + 2, 9, 5.6, 4, '#8c7e6c', { rough: 1 });
+    const gable = new THREE.CylinderGeometry(1, 1, 1, 3).rotateX(-Math.PI / 2).translate(0, 0.5, 0).scale(10.4 / 1.732, 2.8 / 1.5, 4.6);
+    this.s.add(gable, fr.at(-9, 4.6, zf + 2.1), '#86281f', { rough: 0.45, fx: FX.METAL }, this.seed);
+    this.box(fr, -9, 4.6, zf + 4.45, 8.4, 1.8, 0.15, '#4a2c1c');
+    this.sign(fr, 'casinoBoard', -9, 5.4, zf + 4.56, 1.5, 0.9);
+    this.storefront(fr, -9, zf + 4.06, 4.8, 3, 0.8);
+    this.light(fr.p(-9, 4, zf + 5), 1, 0.8, 0.5, 3);
+    // Dark awning over the rest of the casino front.
+    this.box(fr, -18, 3, zf + 1.2, 10, 0.25, 2.4, '#3a2c22');
+    this.storefront(fr, -18, zf + 0.06, 8, 2.4, 0.55);
+    this.palm(fr, -14, zf + 3, 8);
+    // Denny's: taller tan box, brown base, red mansard band with striped awnings below it.
+    const dx = 12, dz = -1, dw = 22, dd = 28, dzf = dz + dd / 2;
+    this.box(fr, dx, -1.5, dz, dw, 9.3, dd, '#d6c4a2');
+    this.box(fr, dx, -1.5, dz, dw + 0.2, 2.5, dd + 0.2, '#4e3626');
+    this.box(fr, dx, 7.6, dz, dw + 0.3, 0.35, dd + 0.3, '#5a3e2c');
+    this.storefront(fr, dx, dzf + 0.06, 19, 2.3, 0.9);
+    const tilt = (x: number, z: number, yaw: number, a: number) => fr.at(x, 0, z, yaw).multiply(new THREE.Matrix4().makeRotationX(a));
+    const mansard = (len: number) => new THREE.BoxGeometry(len, 1.7, 0.25).translate(0, 0.85, 0);
+    const lift = new THREE.Matrix4().makeTranslation(0, 3.5, 0);
+    this.s.add(mansard(dw + 1.2), lift.clone().multiply(tilt(dx, dzf + 0.75, 0, -0.42)), '#7e1e1a', { rough: 0.45, fx: FX.METAL }, this.seed);
+    this.s.add(mansard(dd + 1.2), lift.clone().multiply(tilt(dx + dw / 2 + 0.75, dz, Math.PI / 2, -0.42)), '#7e1e1a', { rough: 0.45, fx: FX.METAL }, this.seed);
+    this.box(fr, dx, 3.35, dzf + 0.5, dw + 1.4, 0.15, 1.3, '#ffe2a0', { glow: 1.2 });
+    const stripe = new THREE.BoxGeometry(0.62, 0.05, 1.5).translate(0, 0, 0.75);
+    for (let i = 0; i < 5; i++) {
+      const ax = dx - dw / 2 + 2.3 + i * 4.35;
+      for (let k = 0; k < 6; k++) {
+        this.s.add(stripe, new THREE.Matrix4().makeTranslation(0, 2.95, 0).multiply(tilt(ax - 1.55 + k * 0.62, dzf + 0.05, 0, 0.55)), k % 2 ? '#f2eee6' : '#c4201c', { rough: 0.8 }, this.seed);
+      }
+    }
+    this.sign(fr, 'americasDiner', dx - 1.5, 6.1, dzf + 0.05, 0.95, 0.7);
+    this.sign(fr, 'dennysHex', dx + dw / 2 - 2.4, 6.6, dzf + 0.06, 1.8, 1.2);
+    const hex = this.rects.dennysHex;
+    this.sg.quad(fr.p(dx + dw / 2 + 0.06, 6.6, dzf - 3), fr.r, UP, 1.8 * hex.aspect, 1.8, hex, 1.2, FX.NONE, this.seed, false);
     // Rooftop units.
-    for (const [ux, uz] of [[-12, -4], [6, 2], [14, -8]]) this.box(fr, ux, H + 1.3, uz, 2.6, 1.4, 2, '#b4b4ae', { fx: FX.METAL });
+    for (const [ux, uz] of [[8, -6], [15, 2]]) this.box(fr, ux, 7.8, uz, 2.6, 1.4, 2, '#b4b4ae', { fx: FX.METAL });
     this.roadhousePylon(hwy, new THREE.Vector3(x - hwy.px, 0, z - hwy.pz).normalize());
     for (const [lx, lz] of [[-22, 26], [6, 30], [24, 24], [-30, 8]]) this.lotLight(fr, lx, lz);
-    this.light(fr.p(-4, H + 2.3, zf + 1), 1, 0.45, 0.1, 5);
+    this.light(fr.p(dx, 3.3, dzf + 1.5), 1, 0.8, 0.5, 4);
+    this.light(fr.p(-18, 3.8, zf + 1.5), 1, 0.8, 0.5, 3);
+  }
+
+  private palm(fr: Frame, x: number, z: number, h: number) {
+    const trunk = new THREE.CylinderGeometry(0.18, 0.28, h, 6).translate(0, h / 2, 0);
+    this.s.add(trunk, fr.at(x, -0.3, z), '#8a7458', { rough: 0.95 }, this.seed);
+    this.s.add(new THREE.CylinderGeometry(0.7, 0.4, 1.4, 7).translate(0, -0.7, 0), fr.at(x, h - 0.2, z), '#9a8a62', { rough: 1 }, this.seed);
+    const frond = new THREE.ConeGeometry(0.5, 3, 4, 1).rotateX(Math.PI / 2).translate(0, 0, 1.5).scale(1, 0.25, 1);
+    for (let i = 0; i < 10; i++) {
+      const m = fr.at(x, h, z, (i / 10) * Math.PI * 2).multiply(new THREE.Matrix4().makeRotationX(0.2 + (i % 3) * 0.12));
+      this.s.add(frond, m, i % 3 ? '#4f6a2c' : '#5e7a34', { rough: 0.85 }, this.seed);
+    }
   }
 
   /** Terrible's roadside sign: one timber post, Denny's hex, LED board, the bulb-ringed Road House board and a wagon wheel. */
