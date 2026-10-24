@@ -354,30 +354,41 @@ export class Laughlin {
     this.box(fr, cx, 0.2, z, w, h, 0.15, '#3a2e22', { rough: 0.15, glow });
   }
 
-  /** Aquarius: two copper-glass towers with white fins and blue light strips. */
+  /** Aquarius: two long, kinked bronze-glass towers with white fins and blue light strips. */
   private aquarius() {
     this.seed = -102;
     const fr = this.site(31540, 33450, 0.27, 110, 100);
     this.box(fr, 0, -3, 0, 150, 14, 120, '#e8e2d6', { rough: 0.8 });
     this.box(fr, 0, 9.8, 0, 151, 1.4, 121, '#2a7ab8', { rough: 0.5, glow: 0.6 });
-    const towers: [number, number, number, number, number][] = [
-      [20, 30, 66, 24, 20],
-      [-35, -10, 58, 22, 17],
+    // Two long towers running back from the river, each kinked near its west end
+    // (traced from the aerial): [world z of the centreline, floors].
+    const towers: [number, number][] = [
+      [33390, 19],
+      [33512, 23],
     ];
-    for (const [x, z, w, d, fl] of towers) {
-      const top = this.slab(fr, x, z, w, d, fl, '#6e5444', FX.GLASS, 1.6);
-      // White fins at the ends and a white crown.
-      for (const e of [-1, 1]) {
-        this.box(fr, x + e * (w / 2 + 0.6), -2, z, 2.4, top + 3, d + 1.2, '#f0ece4', { rough: 0.6 });
-        this.box(fr, x + e * (w / 2 + 1.9), 12, z, 0.3, top - 12, 4.2, '#6e5444', { rough: 0.3, fx: FX.WINDOWS, glow: 0.4 });
-      }
-      this.box(fr, x, top, z, w + 2, 2.4, d + 1.2, '#f0ece4');
-      // Blue LED strips up the corners.
-      for (const e of [-1, 1]) for (const f of [-1, 1]) this.tube(fr, new THREE.Vector3(x + e * (w / 2 + 1.9), 10, z + f * (d / 2 + 0.7)), new THREE.Vector3(x + e * (w / 2 + 1.9), top + 2, z + f * (d / 2 + 0.7)), 0.3, '#3aa8ff', 2.2);
-      this.beacons(fr, x, z, w, top + 2.4);
-      this.glow(fr, x, z, w + 4, 10, top + 2, 0.35, 0.75, 1.6);
+    const D = 22, east = 98, west = 57, kink = 0.2;
+    for (const [tz, fl] of towers) {
+      const tf = new Frame(31512, this.hf.height(31512, tz), tz, 1, 0);
+      this.sites.push({ x: 31512, z: tz, ux: tf.r.x, uz: tf.r.z, hw: D / 2 + 4, hd: 82 });
+      const j = -20;
+      const top = this.slab(tf, 0, j + east / 2, D, east, fl, '#6e5444', FX.GLASS, 1.6);
+      const wx = -(west / 2) * Math.sin(kink);
+      const wz = j - (west / 2) * Math.cos(kink);
+      this.slab(tf, wx, wz, D, west, fl, '#6e5444', FX.GLASS, 1.6, kink);
+      // White fins closing both ends, a white crown, the window stack up the river end.
+      const ez = j + east;
+      this.box(tf, 0, -2, ez + 1.2, D + 1.2, top + 3, 2.4, '#f0ece4', { rough: 0.6 });
+      this.box(tf, 0, 12, ez + 2.5, 4.2, top - 12, 0.3, '#6e5444', { rough: 0.3, fx: FX.WINDOWS, glow: 0.4 });
+      this.box(tf, -west * Math.sin(kink), -2, j - west * Math.cos(kink) - 1.2, D + 1.2, top + 3, 2.4, '#f0ece4', { rough: 0.6 }, kink);
+      this.box(tf, 0, top, j + east / 2, D + 1.2, 2.4, east, '#f0ece4');
+      this.box(tf, wx, top, wz, D + 1.2, 2.4, west, '#f0ece4', {}, kink);
+      // Blue LED strips up the river-end corners.
+      for (const e of [-1, 1]) this.tube(tf, new THREE.Vector3(e * (D / 2 + 0.7), 10, ez + 2.5), new THREE.Vector3(e * (D / 2 + 0.7), top + 2, ez + 2.5), 0.3, '#3aa8ff', 2.2);
+      this.light(tf.p(0, top + 3.5, ez), 1, 0.08, 0.04, 3.2, 1);
+      this.light(tf.p(wx * 2, top + 3.5, j - west), 1, 0.08, 0.04, 3.2, 1);
+      this.glow(tf, 0, ez, D + 4, 10, top + 2, 0.35, 0.75, 1.6);
+      if (fl > 20) this.sign(tf, 'aquarius', 0, top - 4, ez + 2.7, 5.5, 1.4);
     }
-    this.sign(fr, 'aquarius', 20, 23 * FLOOR - 4, 30 + 12.3, 10, 1.4);
     this.sign(fr, 'aquarius', 0, 5, 60.4, 5.5, 1.5);
     this.porte(fr, -40, -66, 34, 14, '#2a7ab8');
     // The neon fan over the entrance: blue and white tubes splaying up from the doors.
