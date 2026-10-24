@@ -431,21 +431,32 @@ export class Landmarks {
   private elRey(x: number, z: number) {
     this.seed = 7;
     const { fr, hwy } = this.frameFacing(x, z, 28);
-    // L-shaped single-storey court: white stucco, red tile roofs, a door per room.
+    // L-shaped single-storey court: whitewashed block under a flat roof whose long
+    // green-painted overhang rests on angled braces; green door and window trim.
+    const green = '#5e8c62';
     const wings: [number, number, number, number][] = [[0, -4, 36, 9], [-13.5, -18, 9, 22]];
     for (const [cx, cz, w, d] of wings) {
-      this.box(fr, cx, -1.5, cz, w, 4.9, d, '#efe6d6');
-      this.box(fr, cx, 3.4, cz, w + 1.6, 0.5, d + 1.6, '#a64a2c', { rough: 0.7 });
+      this.box(fr, cx, -1.5, cz, w, 4.6, d, '#eae4d6');
+      this.box(fr, cx, 3.1, cz, w + 0.6, 0.3, d + 0.6, '#5a4a3c');
     }
-    for (let i = 0; i < 9; i++) {
-      const dx = -15 + i * 3.8;
-      this.box(fr, dx, 0, 0.52, 1, 2.1, 0.06, i % 2 ? '#2e6a6a' : '#7a2a22');
-      // Porch light by each door.
-      this.box(fr, dx + 0.9, 2.3, 0.55, 0.18, 0.25, 0.1, '#ffe0a0', { glow: 1.5 });
-      this.box(fr, dx + 1.7, 0.9, 0.52, 1, 1, 0.06, '#40342a', { rough: 0.2, glow: i % 3 ? 0.6 : 0 });
-      if (i % 2 === 0) this.light(fr.p(dx + 0.9, 2.4, 0.8), 1, 0.7, 0.35, 0.7);
+    this.box(fr, 0, 2.9, 1.8, 36.4, 0.16, 3.6, '#f0ece2');
+    this.box(fr, 0, 2.75, 3.62, 36.6, 0.55, 0.14, green, { rough: 0.8 });
+    this.box(fr, 0, 2.75, 0.5, 36.4, 0.55, 0.1, green, { rough: 0.8 });
+    const brace = new THREE.BoxGeometry(0.16, 4.1, 0.16).translate(0, 2.05, 0);
+    for (let i = 0; i < 10; i++) {
+      const dx = -17 + i * 3.8;
+      if (i % 2 === 0) this.s.add(brace, fr.at(dx + 0.3, -0.3, 0.75).multiply(new THREE.Matrix4().makeRotationX(0.76)), green, { rough: 0.8 }, this.seed);
+      if (i === 9) break;
+      const door = i % 4 === 1 ? '#a89478' : i % 3 === 2 ? '#2a2420' : '#5e8c62';
+      this.box(fr, dx + 2, -0.1, 0.5, 1.2, 2.3, 0.1, green);
+      this.box(fr, dx + 2, 0, 0.53, 0.95, 2.1, 0.06, door);
+      this.box(fr, dx + 3.6, 0.6, 0.5, 1.3, 1.5, 0.1, green);
+      this.box(fr, dx + 3.6, 0.8, 0.53, 1.1, 1.2, 0.06, i % 3 === 0 ? '#8a3424' : '#40342a', { rough: 0.3, glow: i % 3 === 1 ? 0.6 : 0 });
+      this.box(fr, dx + 2.9, 2.4, 0.55, 0.18, 0.25, 0.1, '#ffe0a0', { glow: 1.5 });
+      if (i % 2 === 0) this.light(fr.p(dx + 2.9, 2.5, 0.8), 1, 0.7, 0.35, 0.7);
     }
     this.box(fr, 9, -1.5, 3, 7, 4.4, 5, '#efe6d6');
+    this.box(fr, 9, 2.4, 3, 7.4, 0.5, 5.4, green, { rough: 0.8 });
     this.storefront(fr, 9, 5.55, 5, 2.2, 0.8);
     // Vintage neon pole sign with buzzing VACANCY.
     const side = new THREE.Vector3(x - hwy.px, 0, z - hwy.pz).normalize();
