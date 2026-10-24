@@ -374,9 +374,14 @@ export class Landmarks {
     const W = 17, D = 13, H = 4.6;
     this.box(fr, 0, -1.5, 0, W, H + 1.5, D, '#c9bba6');
     this.box(fr, 0, H - 0.4, 0, W + 0.6, 1.2, D + 0.6, '#3c3a38', { rough: 0.6 });
-    // Golden "eyebrow" panel with the arches.
-    this.box(fr, -3, 0, D / 2 + 0.05, 4.8, H + 1.6, 0.6, '#ffbc0d', { rough: 0.5 });
-    this.sign(fr, 'mcdArches', -3, H - 0.2, D / 2 + 0.36, 2.2, 1.2);
+    // Entry tower: tan stucco, white cornice, dark hipped cap, red panel with the arches.
+    const tw = 4.6, th = 8.2, tz = D / 2 - 1.5;
+    this.box(fr, -3, -1.5, tz, tw, th + 1.5, tw, '#cdb898');
+    this.box(fr, -3, th - 0.1, tz, tw + 0.5, 0.45, tw + 0.5, '#f0ece4');
+    const cap = new THREE.ConeGeometry(1, 1, 4, 1).rotateY(Math.PI / 4).scale((tw + 0.9) / Math.SQRT2, 2, (tw + 0.9) / Math.SQRT2).translate(0, 1, 0);
+    this.s.add(cap, fr.at(-3, th + 0.35, tz), '#4c4440', { rough: 0.7 }, this.seed);
+    this.sign(fr, 'mcdTower', -3, th - 2.3, tz + tw / 2 + 0.02, 2.9, 1.2);
+    for (const sx of [-1, 1]) this.sign(fr, 'mcdTower', -3 + sx * (tw / 2 + 0.02), th - 2.3, tz, 2.9, 1.2, FX.NONE, sx * Math.PI / 2);
     this.storefront(fr, 3.5, D / 2 + 0.06, 8, 2.6, 0.9);
     // Drive-thru menu board.
     this.box(fr, W / 2 + 4, -0.5, -2, 0.4, 2.6, 2.4, '#2a2a2a');
