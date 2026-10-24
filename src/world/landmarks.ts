@@ -249,17 +249,56 @@ export class Landmarks {
     this.storefront(fr, -18, zf + 0.06, 6, 2.4, 0.5);
     // Rooftop units.
     for (const [ux, uz] of [[-12, -4], [6, 2], [14, -8]]) this.box(fr, ux, H + 1.3, uz, 2.6, 1.4, 2, '#b4b4ae', { fx: FX.METAL });
-    // Highway pylon: Terrible's on top, the message board, then Denny's.
-    const side = new THREE.Vector3(x - hwy.px, 0, z - hwy.pz).normalize();
-    const py = this.pylon(hwy, side, 16, 2, [
-      { name: 'terribles', h: 5, y: 19.5, glow: 1.3 },
-      { name: 'terriblesLED', h: 3.2, y: 15.2, glow: 1.4 },
-      { name: 'dennys', h: 3.2, y: 11.4, glow: 1.3 },
-    ], '#a8141a');
-    this.light(py.p(0, 19.5, 0), 1, 0.5, 0.12, 7);
-    this.light(py.p(0, 11.4, 0), 1, 0.75, 0.1, 5);
+    this.roadhousePylon(hwy, new THREE.Vector3(x - hwy.px, 0, z - hwy.pz).normalize());
     for (const [lx, lz] of [[-22, 26], [6, 30], [24, 24], [-30, 8]]) this.lotLight(fr, lx, lz);
     this.light(fr.p(-4, H + 2.3, zf + 1), 1, 0.45, 0.1, 5);
+  }
+
+  /** Terrible's roadside sign: one timber post, Denny's hex, LED board, the bulb-ringed Road House board and a wagon wheel. */
+  private roadhousePylon(hwy: { px: number; pz: number; tx: number; tz: number }, side: THREE.Vector3) {
+    const x = hwy.px + side.x * 14;
+    const z = hwy.pz + side.z * 14;
+    const fr = new Frame(x, this.hf.height(x, z), z, hwy.tx, hwy.tz);
+    const wood = '#6a4a30';
+    const both = (name: string, px: number, y: number, h: number, t: number, glow: number, fx: number = FX.NONE) => {
+      const r = this.rects[name];
+      this.sg.quad(fr.p(px, y, t), fr.r, UP, h * r.aspect, h, r, glow, fx, this.seed, false);
+      this.sg.quad(fr.p(-px, y, -t), fr.r.clone().negate(), UP, h * r.aspect, h, r, glow, fx, this.seed + 0.5, false);
+    };
+    this.box(fr, 0, -1, 0, 0.9, 17.8, 0.36, wood, { rough: 0.95 });
+    this.box(fr, 0, -1, 0, 1.6, 1.6, 1.6, '#8a7a68', { rough: 1 });
+    // Denny's hex.
+    this.box(fr, 0, 2.5, 0, 4.6, 2.2, 0.4, '#ffd200');
+    both('dennysHex', 0, 3.6, 2.4, 0.22, 1.3);
+    // Message board with neon wagon-wheel halves hanging off its lower corners.
+    const ledH = 3, ledW = ledH * this.rects.terriblesLED.aspect;
+    this.box(fr, 0, 5.55, 0, ledW + 0.5, ledH + 0.5, 0.6, '#1c1a18', { rough: 0.6 });
+    both('terriblesLED', 0, 7.2, ledH, 0.31, 1.5);
+    const arc = new THREE.TorusGeometry(1.1, 0.07, 5, 14, Math.PI).rotateZ(Math.PI);
+    const spoke = new THREE.BoxGeometry(0.06, 1.1, 0.06).translate(0, -0.55, 0);
+    for (const sx of [-1, 1]) {
+      const m = fr.at(sx * (ledW / 2 - 0.6), 5.55, 0);
+      this.s.add(arc, m, '#ff8a1c', { glow: 2 }, this.seed);
+      for (let i = 1; i < 5; i++) this.s.add(spoke, m.clone().multiply(new THREE.Matrix4().makeRotationZ(-Math.PI / 2 + (i / 5) * Math.PI)), '#ff8a1c', { glow: 2 }, this.seed);
+    }
+    this.light(fr.p(0, 6, 0), 1, 0.55, 0.12, 4);
+    // Wood board inside the red chaser ring.
+    const by = 12.4, bh = 3.6, bw = bh * this.rects.roadhouse.aspect;
+    this.box(fr, 0, by - bh / 2 - 0.15, 0, bw + 0.3, bh + 0.3, 0.45, '#3e2416', { rough: 0.9 });
+    both('roadhouse', 0, by, bh, 0.24, 1.1);
+    const rh = 5.8, rw = rh * this.rects.roadhouseRing.aspect;
+    both('roadhouseRing', rw * 0.04, by, rh, 0.3, 1.6, FX.CHASE);
+    for (const [bx, bz] of [[-1, 0], [1, 0], [0, 1], [0, -1]]) {
+      this.box(fr, bx * (bw / 2 + 0.5), by + bz * (bh / 2 + 0.3) - 0.06, 0, bz ? 0.12 : 1, bz ? 0.6 : 0.12, 0.12, '#3a3a3a', { fx: FX.METAL });
+    }
+    this.light(fr.p(0, by, 0), 1, 0.3, 0.15, 7);
+    // Wagon wheel on top.
+    const wy = by + rh / 2 + 1.5;
+    const wm = fr.at(0, wy, 0);
+    this.s.add(new THREE.TorusGeometry(1.4, 0.13, 6, 24), wm, wood, { rough: 0.9 }, this.seed);
+    this.s.add(new THREE.CylinderGeometry(0.28, 0.28, 0.5, 10).rotateX(Math.PI / 2), wm, '#3a2a1c', {}, this.seed);
+    const sp = new THREE.BoxGeometry(0.1, 1.4, 0.1).translate(0, 0.7, 0);
+    for (let i = 0; i < 12; i++) this.s.add(sp, wm.clone().multiply(new THREE.Matrix4().makeRotationZ((i / 12) * Math.PI * 2)), wood, { rough: 0.9 }, this.seed);
   }
 
   private terriblesStore(x: number, z: number) {
