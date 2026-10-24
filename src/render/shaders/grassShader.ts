@@ -87,6 +87,7 @@ void main() {
   if (wLau > 0.0) {
     vec3 lp = textureLod(uImgDetail, lauUV(centre, 4096.0), 0.0).rgb;
     float sat = (max(lp.r, max(lp.g, lp.b)) - min(lp.r, min(lp.g, lp.b))) / max(max(lp.r, max(lp.g, lp.b)), 1e-3);
+    sat *= smoothstep(0.12, 0.22, luma(lp));
     float outside = step(0.5, max(abs(lcUV.x - 0.5), abs(lcUV.y - 0.5)));
     habitat = mix(habitat, outside > 0.5 ? smoothstep(0.14, 0.26, sat) * (1.0 - rocky) : habitat * smoothstep(0.1, 0.22, sat), wLau);
   }
