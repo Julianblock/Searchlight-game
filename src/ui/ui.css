@@ -548,6 +548,9 @@ kbd {
 .sound-btn.off {
   color: var(--ink-dim);
 }
+.full-btn {
+  right: 66px;
+}
 .sound-btn svg {
   width: 20px;
   height: 20px;
@@ -732,6 +735,9 @@ kbd {
   display: flex;
   gap: 8px;
 }
+body.can-full .t-top {
+  right: max(114px, calc(env(safe-area-inset-right) + 102px));
+}
 .t-btn {
   position: static;
   width: 40px;
@@ -836,6 +842,9 @@ body.touch .discovery {
 body.touch .sound-btn {
   top: max(14px, env(safe-area-inset-top));
   right: max(14px, env(safe-area-inset-right));
+}
+body.touch .full-btn {
+  right: calc(max(14px, env(safe-area-inset-right)) + 48px);
 }
 
 /* Short landscape phone screens: compact menu. */

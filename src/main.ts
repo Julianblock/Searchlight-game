@@ -339,6 +339,31 @@ async function boot() {
     canvas.focus();
   };
   ui.append(muteBtn);
+  const fullBtn = document.createElement('button');
+  fullBtn.className = 'sound-btn full-btn';
+  const ICON_FULL = '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none"/></svg>';
+  const ICON_EXIT = '<svg viewBox="0 0 24 24"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" fill="none"/></svg>';
+  const toggleFull = () => {
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    else document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }).catch(() => {});
+  };
+  const syncFull = () => {
+    const on = !!document.fullscreenElement;
+    fullBtn.innerHTML = on ? ICON_EXIT : ICON_FULL;
+    fullBtn.title = on ? 'Exit full screen (K)' : 'Full screen (K)';
+  };
+  syncFull();
+  document.addEventListener('fullscreenchange', syncFull);
+  fullBtn.onclick = (e) => {
+    e.stopPropagation();
+    toggleFull();
+    fullBtn.blur();
+    canvas.focus();
+  };
+  if (document.fullscreenEnabled) {
+    ui.append(fullBtn);
+    document.body.classList.add('can-full');
+  }
   const wake = () => sound.start();
   addEventListener('pointerdown', wake);
   addEventListener('keydown', wake);
@@ -384,6 +409,7 @@ async function boot() {
 
   addEventListener('keydown', (e) => {
     if (e.code === 'Escape') setMode(mode === 'menu' ? 'fly' : 'menu');
+    if (e.code === 'KeyK' && !e.repeat) toggleFull();
     if (mode !== 'fly') return;
     if (e.code === 'KeyH') hud.toggleHelp();
     if (e.code === 'KeyT') hud.toggleHidden();
