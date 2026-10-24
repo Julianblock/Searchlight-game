@@ -371,21 +371,28 @@ const SIGNS: SignSpec[] = [
   {
     name: 'welcome',
     w: 720,
-    h: 360,
+    h: 400,
+    cutout: true,
     draw(g, w, h) {
-      // Weathered wooden sign with routed letters.
-      g.fillStyle = '#6b4a2e';
-      g.fillRect(0, 0, w, h);
-      for (let y = 0; y < h; y += 36) {
-        g.fillStyle = y % 72 ? '#5e4028' : '#73502f';
-        g.fillRect(0, y, w, 34);
-      }
-      g.fillStyle = '#f2e2b8';
-      fitText(g, 'WELCOME TO', w / 2, h * 0.17, w * 0.6, (p) => `bold ${p}px ${SERIF}`, h * 0.12);
-      fitText(g, 'SEARCHLIGHT', w / 2, h * 0.42, w * 0.9, (p) => `900 ${p}px ${SERIF}`, h * 0.26);
-      fitText(g, 'NEVADA', w / 2, h * 0.64, w * 0.4, (p) => `bold ${p}px ${SERIF}`, h * 0.11);
-      g.fillStyle = '#e8c870';
-      fitText(g, 'GOLD CAMP · FOUNDED 1897 · ELEV 3,540', w / 2, h * 0.84, w * 0.9, (p) => `bold ${p}px ${SANS}`, h * 0.08);
+      // The dark green slate panel set into the boulder, its edges following the rock.
+      g.fillStyle = '#284a3e';
+      g.beginPath();
+      g.moveTo(w * 0.04, h * 0.98);
+      g.lineTo(w * 0.97, h * 0.98);
+      g.lineTo(w * 0.99, h * 0.45);
+      g.lineTo(w * 0.86, h * 0.03);
+      g.lineTo(w * 0.1, h * 0.02);
+      g.lineTo(w * 0.01, h * 0.4);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = '#2c4c42';
+      g.lineWidth = 6;
+      g.stroke();
+      g.fillStyle = '#eef2ee';
+      fitText(g, 'Welcome To', w / 2, h * 0.18, w * 0.4, (p) => `${p}px ${SANS}`, h * 0.12);
+      fitText(g, 'Searchlight', w / 2, h * 0.42, w * 0.86, (p) => `${p}px ${SANS}`, h * 0.28);
+      fitText(g, 'Nevada', w / 2, h * 0.64, w * 0.3, (p) => `${p}px ${SANS}`, h * 0.11);
+      fitText(g, 'Historic Mining – Ranching Area', w / 2, h * 0.83, w * 0.86, (p) => `${p}px ${SANS}`, h * 0.11);
     },
   },
   {
