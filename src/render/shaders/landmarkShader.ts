@@ -123,7 +123,7 @@ void main() {
         cover = 0.35;
       } else if (fx < 5.5) {
         float mx = smoothstep(0.03 + fw.x, 0.03 - fw.x, abs(f.x * 2.0 - floor(f.x * 2.0 + 0.5)));
-        float my = smoothstep(0.05 + fw.y, 0.05 - fw.y, abs(f.y - 0.5) - 0.45);
+        float my = smoothstep(0.07 + fw.y, 0.07 - fw.y, 0.5 - abs(f.y - 0.5));
         win = 1.0 - max(mx, my);
         cover = 0.85;
       } else {
@@ -137,7 +137,8 @@ void main() {
       float aa = clamp(1.4 - max(fw.x, fw.y) * 2.5, 0.0, 1.0);
       win = mix(cover, win, aa);
       float h = hash12(cell + floor(vMat.w) * 17.31);
-      vec3 glass = fx > 4.5 && fx < 5.5 ? vColor * 0.55 : vec3(0.09, 0.11, 0.13);
+      vec3 glass = fx > 4.5 && fx < 5.5 ? vColor * 0.7 : vec3(0.09, 0.11, 0.13);
+      if (fx > 4.5 && fx < 5.5) albedo = vec3(0.7, 0.68, 0.64);
       albedo = mix(albedo, glass, win);
       rough = mix(rough, 0.1, win);
       // Rooms lit after dark: mostly warm lamps, the odd cool TV glow, curtains half drawn.
