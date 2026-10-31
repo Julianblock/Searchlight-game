@@ -5,6 +5,7 @@ import type { ShadowMap } from '../render/shadows';
 import { Frame, FX, type Mat, SignBuilder, SolidBuilder, UP } from './builders';
 import type { Heightfield } from './heightfield';
 import type { Lot } from './props';
+import type { Crowd } from '../life/people';
 import { buildSignAtlas, type SignRect } from './signAtlas';
 
 /** Storey height the facade shader's room grid assumes (m). */
@@ -58,6 +59,8 @@ export class Laughlin {
   /** River-mirrored facades: world x, z, y0, y1, then linear rgb and half-width. */
   readonly glows: number[] = [];
   private sites: Rect[] = [];
+  /** Riverwalk strollers and the crowds under the porte-cochères. */
+  readonly crowd: Crowd = { walks: [], spots: [], day: 0.45, night: 1, cx: 31400, cz: 34100, radius: 1900 };
   /**
    * Surface lots traced from the aerial imagery (x0, z0, x1, z1): stall rows run
    * north-south, parallel to Casino Drive.
@@ -244,6 +247,9 @@ export class Laughlin {
 
   /** Porte-cochère: a lit canopy on columns at local (x, z). */
   private porte(fr: Frame, x: number, z: number, w: number, d: number, color: string, h = 6) {
+    const c = fr.p(x, 0, z);
+    this.crowd.spots.push({ x: c.x, z: c.z, r: Math.min(w, d) * 0.35, n: 9 });
+    this.sites.push({ x: c.x, z: c.z, ux: fr.r.x, uz: fr.r.z, hw: w / 2 + 4, hd: d / 2 + 4 });
     this.box(fr, x, h, z, w, 1.4, d, color, { rough: 0.5 });
     this.box(fr, x, h - 0.05, z, w - 1, 0.05, d - 1, '#fff2d8', { glow: 1.3 });
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) this.box(fr, x + sx * (w / 2 - 1), -1, z + sz * (d / 2 - 1), 0.9, h + 1, 0.9, color);
@@ -731,6 +737,7 @@ export class Laughlin {
     const pillar = new THREE.BoxGeometry(0.62, 1.15, 0.62).translate(0, 0.575, 0);
     let prev: THREE.Vector3 | null = null;
     let k = 0;
+    let walk: number[] = [];
     for (let z = 32560; z <= 35680; z += 5) {
       const b = bankAt(z);
       const x = b.x - b.nx * 4;
@@ -738,8 +745,11 @@ export class Laughlin {
       const y = this.hf.height(x, zz);
       if (y < 155) {
         prev = null;
+        walk = [];
         continue;
       }
+      if (!walk.length) this.crowd.walks.push(walk);
+      walk.push(b.x - b.nx * 6.2, z - b.nz * 6.2);
       const p = new THREE.Vector3(x, y, zz);
       this.s.add(pillar, fr.at(x, y - 0.25, zz, k * 0.7), k % 2 ? '#8c7a66' : '#7e6c5a', { rough: 1 }, this.seed);
       this.box(fr, x, y + 0.88, zz, 0.72, 0.1, 0.72, '#9a8a76', { rough: 1 });
