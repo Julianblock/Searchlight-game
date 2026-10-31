@@ -317,7 +317,7 @@ export class Props {
             const z = lot.z + uz * u + ux * (v + dv);
             const s = hash(x * 0.37 + z * 1.13);
             const cell = Math.round(x / 2.5) * 100003 + Math.round(z / 2.5);
-            if (s > (lot.fill ?? 0.75) || taken.has(cell) || onRoad(x, z, 2.2, 2.2, 0)) continue;
+            if (s > (lot.fill ?? 0.75) || taken.has(cell) || skip(x, z) || onRoad(x, z, 2.2, 2.2, 0)) continue;
             taken.add(cell);
             const pickup = hash(s * 7.1) < 0.35;
             const yaw = lot.ang + (face * Math.PI) / 2 + (hash(s * 3.3) - 0.5) * 0.06;
