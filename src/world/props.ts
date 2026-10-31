@@ -6,6 +6,7 @@ import type { Heightfield } from './heightfield';
 import { merge, StrutBuilder, withPart } from './geom';
 import { LC, type OsmData } from './meta';
 import { latticeGeometry, poleGeometry, PYLON, type Pylon } from './powerLines';
+import type { RoadIndex } from './roadIndex';
 
 export const KIND = { HOUSE: 0, SHED: 1, TANK: 2, TOWER: 3, HUT: 4, VEHICLE: 5, TRAILER: 6, STUCCO: 7 } as const;
 const GEO = { HOUSE: 0, SHED: 1, TANK: 2, TOWER: 3, LATTICE: 4, POLE: 5, TRAILER: 6, FLAT: 7, LAMP: 8 } as const;
@@ -128,7 +129,23 @@ export class Props {
   readonly lights: number[] = [];
   private batches: Batch[] = [];
 
-  constructor(osm: OsmData, hf: Heightfield, pylons: Pylon[] = [], skip: (x: number, z: number) => boolean = () => false) {
+  constructor(osm: OsmData, hf: Heightfield, pylons: Pylon[] = [], skip: (x: number, z: number) => boolean = () => false, roads?: RoadIndex) {
+    // Buildings must keep their footprint (centre and corners) off the pavement;
+    // driveways and footpaths may run right up to the door.
+    const street = (k: string) => !/^(service|footway|path|cycleway|steps|pedestrian|bridleway)$/.test(k);
+    const onRoad = (x: number, z: number, w: number, d: number, ang: number) => {
+      if (!roads) return false;
+      const c = roads.nearest(x, z, 40, street);
+      if (c && c.dist < c.halfWidth + Math.min(w, d) / 2 + 1) return true;
+      const ca = Math.cos(ang), sa = Math.sin(ang);
+      for (const [u, v] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        const px = x + (ca * u * w - sa * v * d) / 2;
+        const pz = z + (sa * u * w + ca * v * d) / 2;
+        const h = roads.nearest(px, pz, 20, street);
+        if (h && h.dist < h.halfWidth + 1.5) return true;
+      }
+      return false;
+    };
     this.material = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       vertexShader: propVertex,
@@ -184,7 +201,7 @@ export class Props {
     osm.buildings.forEach(([x, z, w, d, ang], i) => {
       const s = hash(i + x * 0.01);
       const area = w * d;
-      if (area < 10 || w > 400 || d > 400 || skip(x, z)) return;
+      if (area < 10 || w > 400 || d > 400 || skip(x, z) || onRoad(x, z, w, d, ang)) return;
       const town = isTown(x, z);
       const ratio = Math.max(w, d) / Math.max(1, Math.min(w, d));
       if (ratio < 1.15 && w > 3 && w < 16 && s < 0.4) {
@@ -242,9 +259,13 @@ export class Props {
             const hz = cz + ux * off * side;
             const kk = key(hx, hz);
             if (occ.has(kk) || !isTown(hx, hz) || skip(hx, hz)) continue;
-            occ.add(kk);
             const single = s > 0.55;
-            addHome(hx, hz, single ? 16 + s * 6 : 13 + s * 4, single ? 4.4 : 10 + s * 3, ang + (s > 0.8 ? Math.PI / 2 : 0), s, seed, true);
+            const hw = single ? 16 + s * 6 : 13 + s * 4;
+            const hd = single ? 4.4 : 10 + s * 3;
+            const ha = ang + (s > 0.8 ? Math.PI / 2 : 0);
+            if (onRoad(hx, hz, hw, hd, ha)) continue;
+            occ.add(kk);
+            addHome(hx, hz, hw, hd, ha, s, seed, true);
           }
         }
       }
