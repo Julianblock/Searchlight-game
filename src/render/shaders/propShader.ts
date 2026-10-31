@@ -82,7 +82,7 @@ void main() {
   float rough = 0.85;
   vec3 emit = vec3(0.0);
   float kind = vKind;
-  bool homey = kind < 0.5 || (kind > 3.5 && kind < 4.5) || kind > 5.5;
+  bool homey = kind < 0.5 || (kind > 3.5 && kind < 4.5) || (kind > 5.5 && kind < 7.5);
   if (kind > 4.5 && kind < 5.5) {
     // Vehicles: glossy paint, dark glass, rubber.
     if (vPart > 2.5) { albedo = vRoof.rgb * 0.7; rough = 0.25; }
@@ -101,9 +101,18 @@ void main() {
     // Corrugated metal on sheds, tanks and trailers; flat roofs are tar and
     // gravel or a white elastomeric coat; shingles elsewhere.
     bool metal = (kind > 0.5 && kind < 2.5) || (kind > 5.5 && kind < 6.5);
+    if (kind > 7.5) {
+      // Parking lot asphalt with white stall lines; the aisle stays bare.
+      vec3 pm = vLocal * vScale;
+      albedo = vec3(0.12, 0.118, 0.115) * (0.8 + 0.4 * vnoise(pm.xz * 0.7)) * (0.9 + 0.2 * vnoise(pm.xz * 6.0));
+      float sx = abs(fract((pm.x + 5.4) / 2.7 + 0.5) - 0.5) * 2.7;
+      if (pm.z < 2.0 && sx < 0.06) albedo = vec3(0.62, 0.6, 0.55);
+      rough = 0.9;
+      metal = false;
+    }
     rough = metal ? 0.38 : 0.8;
     if (metal) albedo *= 0.9 + 0.1 * sin((kind > 5.5 ? vLocal.z * vScale.z : vLocal.x * vScale.x) * 6.0);
-    else albedo *= 0.85 + 0.3 * vnoise(vLocal.xz * vScale.xz * 1.5);
+    else if (kind < 7.5) albedo *= 0.85 + 0.3 * vnoise(vLocal.xz * vScale.xz * 1.5);
   } else if (abs(n.y) < 0.5 && homey) {
     vec3 sc0 = vLocal * vScale;
     if (kind > 5.5 && kind < 6.5) {

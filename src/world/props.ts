@@ -5,11 +5,23 @@ import type { ShadowMap } from '../render/shadows';
 import type { Heightfield } from './heightfield';
 import { merge, StrutBuilder, withPart } from './geom';
 import { LC, type OsmData } from './meta';
+import { carGeometry, PAINT, pickupGeometry } from '../life/traffic';
 import { latticeGeometry, poleGeometry, PYLON, type Pylon } from './powerLines';
 import type { RoadIndex } from './roadIndex';
 
-export const KIND = { HOUSE: 0, SHED: 1, TANK: 2, TOWER: 3, HUT: 4, VEHICLE: 5, TRAILER: 6, STUCCO: 7 } as const;
-const GEO = { HOUSE: 0, SHED: 1, TANK: 2, TOWER: 3, LATTICE: 4, POLE: 5, TRAILER: 6, FLAT: 7, LAMP: 8 } as const;
+export const KIND = { HOUSE: 0, SHED: 1, TANK: 2, TOWER: 3, HUT: 4, VEHICLE: 5, TRAILER: 6, STUCCO: 7, PAD: 8 } as const;
+const GEO = { HOUSE: 0, SHED: 1, TANK: 2, TOWER: 3, LATTICE: 4, POLE: 5, TRAILER: 6, FLAT: 7, LAMP: 8, CAR: 9, PICKUP: 10, PAD: 11 } as const;
+
+/** Parking lot: centre, heading of its stall rows (radians), width along the rows, depth across them. */
+export interface Lot {
+  x: number;
+  z: number;
+  ang: number;
+  w: number;
+  d: number;
+  /** Fraction of stalls taken (default 0.75). */
+  fill?: number;
+}
 
 function hash(n: number) {
   const s = Math.sin(n * 91.345 + 47.853) * 43758.5453;
@@ -145,7 +157,7 @@ export class Props {
   readonly lights: number[] = [];
   private batches: Batch[] = [];
 
-  constructor(osm: OsmData, hf: Heightfield, pylons: Pylon[] = [], skip: (x: number, z: number) => boolean = () => false, roads?: RoadIndex) {
+  constructor(osm: OsmData, hf: Heightfield, pylons: Pylon[] = [], skip: (x: number, z: number) => boolean = () => false, roads?: RoadIndex, lots: Lot[] = []) {
     // Buildings must keep their footprint (centre and corners) off the pavement;
     // driveways and footpaths may run right up to the door.
     const street = (k: string) => !/^(service|footway|path|cycleway|steps|pedestrian|bridleway)$/.test(k);
@@ -173,11 +185,11 @@ export class Props {
     this.shadowMaterial.uniforms = this.material.uniforms;
     this.shadowMaterial.defines = { SHADOW_PASS: '' };
 
-    const geos = [houseGeometry(), shedGeometry(), tankGeometry(), towerGeometry(), latticeGeometry(), poleGeometry(), trailerGeometry(), flatGeometry(), lampGeometry()];
+    const geos = [houseGeometry(), shedGeometry(), tankGeometry(), towerGeometry(), latticeGeometry(), poleGeometry(), trailerGeometry(), flatGeometry(), lampGeometry(), carGeometry(), pickupGeometry(), withPart(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), 1)];
     const data: number[][][] = geos.map(() => []);
     const c = new THREE.Color();
     const push = (kind: number, geo: number, x: number, z: number, w: number, h: number, d: number, ang: number, wall: string, roof: string, lit: number, seed: number) => {
-      const y = hf.height(x, z) - 0.4;
+      const y = hf.height(x, z) - (kind === KIND.VEHICLE ? 0.02 : 0.4);
       c.set(wall);
       const wr = [c.r, c.g, c.b];
       c.set(roof);
@@ -287,6 +299,34 @@ export class Props {
       }
     }
 
+    // Parked cars: double rows of nose-to-nose stalls with a driving aisle between pairs.
+    const taken = new Set<number>();
+    for (const lot of lots) {
+      const ux = Math.cos(lot.ang), uz = Math.sin(lot.ang);
+      for (let v = -lot.d / 2 + 2.75; v < lot.d / 2 - 2.5; v += 18) {
+        // Asphalt in one-module pads (two stall rows and their aisle), four stalls wide.
+        for (let u = -lot.w / 2; u < lot.w / 2 - 1; u += 10.8) {
+          const pu = u + 5.4, pv = v + 6.25;
+          const px = lot.x + ux * pu - uz * pv;
+          const pz = lot.z + uz * pu + ux * pv;
+          if (!onRoad(px, pz, 4, 4, 0)) push(KIND.PAD, GEO.PAD, px, pz, 10.8, 0.52, 18, lot.ang, '#2e2d2c', '#2e2d2c', 0, 0);
+        }
+        for (const [dv, face] of [[0, 1], [5.5, -1]]) {
+          for (let u = -lot.w / 2 + 1.35; u < lot.w / 2 - 1.3; u += 2.7) {
+            const x = lot.x + ux * u - uz * (v + dv);
+            const z = lot.z + uz * u + ux * (v + dv);
+            const s = hash(x * 0.37 + z * 1.13);
+            const cell = Math.round(x / 2.5) * 100003 + Math.round(z / 2.5);
+            if (s > (lot.fill ?? 0.75) || taken.has(cell) || onRoad(x, z, 2.2, 2.2, 0)) continue;
+            taken.add(cell);
+            const pickup = hash(s * 7.1) < 0.35;
+            const yaw = lot.ang + (face * Math.PI) / 2 + (hash(s * 3.3) - 0.5) * 0.06;
+            push(KIND.VEHICLE, pickup ? GEO.PICKUP : GEO.CAR, x + ux * (hash(s * 5.7) - 0.5) * 0.3, z + uz * (hash(s * 5.7) - 0.5) * 0.3, 1, 1, 1, yaw, PAINT[Math.floor(hash(s * 9.1) * PAINT.length)], '#222', 0, s);
+          }
+        }
+      }
+    }
+
     // Steel water tanks on the hills above town and at the springs.
     for (const poi of osm.pois) {
       if (poi.kind !== 'storage_tank' && poi.kind !== 'water_tower') continue;
@@ -326,7 +366,7 @@ export class Props {
         const wall = new Float32Array(n * 4);
         const roof = new Float32Array(n * 4);
         const box = new THREE.Box3();
-        const metres = k === GEO.LATTICE || k === GEO.POLE || k === GEO.LAMP;
+        const metres = k === GEO.LATTICE || k === GEO.POLE || k === GEO.LAMP || k === GEO.CAR || k === GEO.PICKUP;
         rows.forEach((r, i) => {
           t0.set(r.slice(0, 4), i * 4);
           t1.set(r.slice(4, 8), i * 4);

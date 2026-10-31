@@ -21,7 +21,7 @@ const ROAD: Record<string, { speed: number; density: number; rank: number }> = {
 const TOWN = { x: 20, z: 200, r: 1100, speed: 15.6 };
 
 /** Paint colours weighted toward what actually drives US-95: white, silver, black, desert tan. */
-const PAINT = ['#f2f2f0', '#f2f2f0', '#e9e9e6', '#1a1b1d', '#1a1b1d', '#8d9196', '#8d9196', '#b5b8bb', '#5c1a17', '#1f2d4a', '#3b4a3a', '#a89878', '#a8281f', '#c9c2b0', '#6a6e72'];
+export const PAINT = ['#f2f2f0', '#f2f2f0', '#e9e9e6', '#1a1b1d', '#1a1b1d', '#8d9196', '#8d9196', '#b5b8bb', '#5c1a17', '#1f2d4a', '#3b4a3a', '#a89878', '#a8281f', '#c9c2b0', '#6a6e72'];
 const TRAILER = ['#f4f4f2', '#e8e6e0', '#c8ccd0', '#7d2a20', '#2c4a7a', '#f2f2f0', '#1e5a3a'];
 const RV = ['#f0ece2', '#e8e2d2', '#f4f2ec'];
 const BOAT = ['#f4f4f4', '#d22a2a', '#1a4a9a', '#f4f4f4', '#2a2a2a'];
@@ -88,7 +88,7 @@ function taper(g: THREE.BufferGeometry, yAbove: number, fx: number, fz: number, 
   return g;
 }
 
-function carGeometry() {
+export function carGeometry() {
   const cabin = taper(box(2.5, 0.52, 1.62, -0.2, 1.02, 0), 1.3, 0.72, 0.9, -0.15);
   return merge([
     withPart(box(4.7, 0.42, 1.82, 0, 0.32, 0), 0),
@@ -99,7 +99,7 @@ function carGeometry() {
   ]);
 }
 
-function pickupGeometry() {
+export function pickupGeometry() {
   return merge([
     withPart(box(5.8, 0.55, 1.98, 0, 0.45, 0), 0),
     withPart(box(2.1, 0.32, 1.96, 1.75, 1.0, 0), 0),
