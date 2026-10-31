@@ -4,6 +4,7 @@ import { landmarkFragment, landmarkVertex } from '../render/shaders/landmarkShad
 import type { ShadowMap } from '../render/shadows';
 import type { Heightfield } from './heightfield';
 import type { OsmData } from './meta';
+import type { Lot } from './props';
 import { buildSignAtlas, type SignRect } from './signAtlas';
 import { Frame, FX, type Mat, SignBuilder, SolidBuilder, UP } from './builders';
 
@@ -23,6 +24,8 @@ export class Landmarks {
   readonly group = new THREE.Group();
   readonly lights: number[] = [];
   readonly sites: Site[] = [];
+  /** Customer parking in front of and beside the businesses. */
+  readonly lots: Lot[] = [];
   private solidMat: THREE.ShaderMaterial;
   private signMat: THREE.ShaderMaterial;
   private shadowMat: THREE.ShaderMaterial;
@@ -167,6 +170,13 @@ export class Landmarks {
     return fr;
   }
 
+  /** Parking lot centred at local (cx, cz), stall rows along local x. */
+  private lot(fr: Frame, cx: number, cz: number, w: number, d: number, fill = 0.6) {
+    if (w < 6 || d < 6) return;
+    const c = fr.p(cx, 0, cz);
+    this.lots.push({ x: c.x, z: c.z, ang: Math.atan2(fr.r.z, fr.r.x), w, d, fill });
+  }
+
   private light(p: THREE.Vector3, r: number, g: number, b: number, size: number, blink = 0) {
     this.lights.push(p.x, p.y, p.z, r, g, b, size, blink);
   }
@@ -291,6 +301,9 @@ export class Landmarks {
       }
     }
     for (const [lx, lz] of [[-22, 26], [6, 30], [24, 24], [-30, 8]]) this.lotLight(fr, lx, lz);
+    this.lot(fr, -2, (zf + 5 + hwy.d - 12) / 2, 62, hwy.d - 12 - zf - 5, 0.55);
+    this.lot(fr, -40, 0, 14, 34, 0.6);
+    this.lot(fr, 35, -2, 18, 26, 0.5);
     this.light(fr.p(dx, 3.3, dzf + 1.5), 1, 0.8, 0.5, 4);
     this.light(fr.p(-18, 3.8, zf + 1.5), 1, 0.8, 0.5, 3);
   }
@@ -383,6 +396,7 @@ export class Landmarks {
     this.sign(fr, 'mcdTower', -3, th - 2.3, tz + tw / 2 + 0.02, 2.9, 1.2);
     for (const sx of [-1, 1]) this.sign(fr, 'mcdTower', -3 + sx * (tw / 2 + 0.02), th - 2.3, tz, 2.9, 1.2, FX.NONE, sx * Math.PI / 2);
     this.storefront(fr, 3.5, D / 2 + 0.06, 8, 2.6, 0.9);
+    this.lot(fr, 1, D / 2 + 10, 26, 12, 0.5);
     // Drive-thru menu board.
     this.box(fr, W / 2 + 4, -0.5, -2, 0.4, 2.6, 2.4, '#2a2a2a');
     this.box(fr, W / 2 + 4.21, 0.4, -2, 0.02, 1.6, 2.1, '#ffe8b0', { glow: 0.8 });

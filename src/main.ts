@@ -134,7 +134,7 @@ async function boot() {
     G.uStripA.value[i].set(g[0], g[1], g[2], g[3]);
     G.uStripB.value[i].set(g[4], g[5], g[6], g[7]);
   }
-  const props = new Props(world.osm, heightfield, power.pylons, (x, z) => landmarks.occupies(x, z) || laughlin.occupies(x, z), roadIndex);
+  const props = new Props(world.osm, heightfield, power.pylons, (x, z) => landmarks.occupies(x, z) || laughlin.occupies(x, z), roadIndex, [...laughlin.lots, ...landmarks.lots]);
   const lights = new LightPoints([...props.lights, ...landmarks.lights, ...laughlin.lights]);
   engine.scene.add(props.group, landmarks.group, laughlin.group, lights.points, power.mesh);
   const cemeteries = new Cemeteries(cemeteryPlans, heightfield);
