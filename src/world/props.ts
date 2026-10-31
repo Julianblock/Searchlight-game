@@ -309,7 +309,18 @@ export class Props {
           const pu = u + 5.4, pv = v + 6.25;
           const px = lot.x + ux * pu - uz * pv;
           const pz = lot.z + uz * pu + ux * pv;
-          if (!onRoad(px, pz, 4, 4, 0)) push(KIND.PAD, GEO.PAD, px, pz, 10.8, 0.52, 18, lot.ang, '#2e2d2c', '#2e2d2c', 0, 0);
+          if (!onRoad(px, pz, 4, 4, 0)) push(KIND.PAD, GEO.PAD, px, pz, 10.8, 0.52, 18, lot.ang, '#2e2d2c', '#2e2d2c', 1, 0);
+        }
+        // Twin-head light poles down the island between nose-to-nose rows.
+        for (let u = -lot.w / 2 + 16.2; u < lot.w / 2 - 5; u += 43.2) {
+          const qx = lot.x + ux * u - uz * (v + 2.75);
+          const qz = lot.z + uz * u + ux * (v + 2.75);
+          if (skip(qx, qz) || onRoad(qx, qz, 2, 2, 0)) continue;
+          const qy = hf.height(qx, qz);
+          for (const side of [1, -1]) {
+            push(KIND.TOWER, GEO.LAMP, qx, qz, 1, 1, 1, lot.ang + (side * Math.PI) / 2, '#8a8c8e', '#4a4c4e', 0, 0.5);
+            this.lights.push(qx - uz * 3.4 * side, qy + 9.6, qz + ux * 3.4 * side, 1, 0.62, 0.26, 1.5, 0);
+          }
         }
         for (const [dv, face] of [[0, 1], [5.5, -1]]) {
           for (let u = -lot.w / 2 + 1.35; u < lot.w / 2 - 1.3; u += 2.7) {
@@ -321,7 +332,7 @@ export class Props {
             taken.add(cell);
             const pickup = hash(s * 7.1) < 0.35;
             const yaw = lot.ang + (face * Math.PI) / 2 + (hash(s * 3.3) - 0.5) * 0.06;
-            push(KIND.VEHICLE, pickup ? GEO.PICKUP : GEO.CAR, x + ux * (hash(s * 5.7) - 0.5) * 0.3, z + uz * (hash(s * 5.7) - 0.5) * 0.3, 1, 1, 1, yaw, PAINT[Math.floor(hash(s * 9.1) * PAINT.length)], '#222', 0, s);
+            push(KIND.VEHICLE, pickup ? GEO.PICKUP : GEO.CAR, x + ux * (hash(s * 5.7) - 0.5) * 0.3, z + uz * (hash(s * 5.7) - 0.5) * 0.3, 1, 1, 1, yaw, PAINT[Math.floor(hash(s * 9.1) * PAINT.length)], '#222', 1, s);
           }
         }
       }
