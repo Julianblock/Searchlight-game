@@ -89,6 +89,10 @@ void main() {
     else if (vPart > 1.5) { albedo = vec3(0.025); rough = 0.9; }
     else if (vPart > 0.5) { albedo = vec3(0.02, 0.025, 0.03); rough = 0.08; }
     else { albedo = vWall.rgb * 0.7; rough = 0.22; }
+  } else if (vPart > 2.5) {
+    // Sun-greyed timber: porch posts, decks, vigas.
+    albedo = vec3(0.34, 0.26, 0.19) * (0.8 + 0.4 * vnoise(vec2(vLocal.x * vScale.x * 0.5, vLocal.y * vScale.y * 6.0)));
+    rough = 0.9;
   } else if (vPart > 1.5) {
     // Galvanised steel; weathered lattice towers are duller than new sheet.
     albedo = kind > 2.5 && kind < 3.5 ? vec3(0.36, 0.37, 0.38) : vec3(0.55, 0.56, 0.58);
@@ -117,10 +121,30 @@ void main() {
     vec2 cell = vec2(u / 3.2, sc.y / 2.9);
     vec2 f = fract(cell);
     vec2 id = floor(cell);
-    bool win = f.x > 0.3 && f.x < 0.72 && f.y > 0.35 && f.y < 0.8 && (id.y + 0.85) * 2.9 < vScale.y * 0.6;
+    bool lower = (id.y + 0.85) * 2.9 < vScale.y * 0.6;
+    // Front door on the +z face, offset per house; no window in its cell.
+    bool front = vLocalN.z > 0.5;
+    float doorU = (hash12(vec2(vRoof.a * 17.0, 3.1)) - 0.5) * vScale.x * 0.4;
+    bool doorCell = front && abs(sc.x - doorU) < 1.7;
+    bool door = front && abs(sc.x - doorU) < 0.48 && sc.y < 2.55;
+    bool doorTrim = front && abs(sc.x - doorU) < 0.6 && sc.y < 2.67 && !door;
+    bool win = f.x > 0.3 && f.x < 0.72 && f.y > 0.35 && f.y < 0.8 && lower && !doorCell;
+    bool trim = !win && f.x > 0.27 && f.x < 0.75 && f.y > 0.31 && f.y < 0.84 && lower && !doorCell;
+    if (door) {
+      vec3 paint = mix(vec3(0.32, 0.2, 0.12), vec3(0.18, 0.32, 0.34), step(0.6, hash12(vec2(vRoof.a, 9.0))));
+      albedo = paint * (0.85 + 0.15 * step(0.5, fract(sc.y * 1.2)));
+      rough = 0.6;
+    } else if (doorTrim || trim) {
+      albedo = vec3(0.62, 0.6, 0.56);
+    }
+    if (trim && f.y < 0.35) albedo *= 0.7;
     if (win) {
-      albedo = vec3(0.04, 0.05, 0.06);
-      rough = 0.3;
+      // Glass with a mullion cross; drawn curtains or blinds in some rooms.
+      vec2 wf = vec2((f.x - 0.3) / 0.42, (f.y - 0.35) / 0.45);
+      float curtain = step(0.45, hash12(id + vRoof.a * 13.0));
+      albedo = mix(vec3(0.07, 0.085, 0.1), vec3(0.42, 0.36, 0.28) * (0.8 + 0.2 * sin(wf.x * 40.0)), curtain * step(0.3, wf.y));
+      rough = 0.12;
+      if (abs(wf.x - 0.5) < 0.035 || abs(wf.y - 0.5) < 0.04) { albedo = vec3(0.6, 0.58, 0.54); rough = 0.7; }
       float lit = step(0.68, hash12(id + vRoof.a * 91.0)) * vWall.a;
       vec3 warm = mix(vec3(1.0, 0.42, 0.12), vec3(0.9, 0.62, 0.36), hash12(id + 3.7));
       // TV flicker in a few rooms.
