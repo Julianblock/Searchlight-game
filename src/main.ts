@@ -52,6 +52,7 @@ import { WaterSurface } from './render/waterSurface';
 import { Fish } from './life/fish';
 import { FISH } from './life/fishSpecies';
 import { Ghosts } from './life/ghosts';
+import { People } from './life/people';
 import { Discoveries } from './ui/discoveries';
 import { Lore } from './world/lore';
 import { VolcanoVision } from './world/volcano';
@@ -147,6 +148,30 @@ async function boot() {
   engine.scene.add(traffic.group);
   const wildlife = new Wildlife(heightfield);
   engine.scene.add(wildlife.group);
+  // Casino Drive's sidewalks, a few metres either side of the centreline.
+  const sidewalks: number[][] = [];
+  for (const r of world.osm.roads) {
+    if (r.name !== 'North Casino Drive' && r.name !== 'South Casino Drive') continue;
+    if (Math.hypot(r.pts[0] - laughlin.crowd.cx, r.pts[1] - laughlin.crowd.cz) > 2500) continue;
+    for (const side of [-1, 1]) {
+      const w: number[] = [];
+      for (let i = 0; i < r.pts.length; i += 2) {
+        const j = Math.min(i + 2, r.pts.length - 2), k = Math.max(0, i - 2);
+        const dx = r.pts[j] - r.pts[k], dz = r.pts[j + 1] - r.pts[k + 1];
+        const l = Math.hypot(dx, dz) || 1;
+        w.push(r.pts[i] - (dz / l) * 11 * side, r.pts[i + 1] + (dx / l) * 11 * side);
+      }
+      sidewalks.push(w);
+    }
+  }
+  const people = new People(
+    [
+      { ...laughlin.crowd, walks: [...laughlin.crowd.walks, ...sidewalks] },
+      { walks: [], spots: landmarks.spots, day: 0.7, night: 0.5, cx: 40, cz: 200, radius: 700 },
+    ],
+    heightfield,
+  );
+  engine.scene.add(people.group);
   const flocks = new Flocks(heightfield);
   flocks.setMonth(env.month);
   engine.scene.add(flocks.mesh);
@@ -674,6 +699,7 @@ async function boot() {
     fish.setMonth(env.month);
     fish.update(dt, cam, camWater.mask > 0.3 && cam.position.y < camWater.level + 6, actor);
     ghosts?.update(dt, cam, G.uNight.value);
+    people.update(dt, cam.position, G.uNight.value);
     volcano.update(dt, cam, window.innerHeight * engine.pixelRatio);
     if (mode === 'fly' && !free) {
       const body = water.sample(actor.x, actor.z).mask > 0.3 ? water.bodyAt(actor.x, actor.z) : null;
@@ -710,7 +736,7 @@ async function boot() {
   frame();
   loading.done();
   Object.assign(window, {
-    touch, engine, env, terrain, water, waterSurface, fish, ghosts, volcano, journal, lore, heightfield, G, player, chase, air, car, driveCam, roadIndex, fences, dust, drive, shadow, precip, cemeteries, cemeteryPlans, controls, menu, hud, places, trees, props, landmarks, laughlin, lights, traffic, wildlife, flocks, sound, power, grass, roads, motes,
+    touch, engine, env, terrain, water, waterSurface, fish, ghosts, people, volcano, journal, lore, heightfield, G, player, chase, air, car, driveCam, roadIndex, fences, dust, drive, shadow, precip, cemeteries, cemeteryPlans, controls, menu, hud, places, trees, props, landmarks, laughlin, lights, traffic, wildlife, flocks, sound, power, grass, roads, motes,
     inspectView: (a: number, h: number) => ((inspectAngle = a), (inspectHeight = h)),
     /** Renders a frame and returns it as a JPEG data URL (debug capture). */
     snap: (w = 1100, x0 = 0, y0 = 0, cw = 1, ch = 1) => {
