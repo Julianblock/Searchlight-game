@@ -192,8 +192,10 @@ void main() {
     float sCoarse = inner ? 0.0 : smoothstep(0.7, 0.2, fp) * (1.0 - sFine);
     // Desert leaves are tiny: creosote leaflets, bursage, catclaw pinnae.
     float leafScale = vSize.y < 3.0 ? 0.06 : 0.1;
+    vec3 cellId = floor(pm / 0.07);
     if (sFine > 0.0) {
       vec4 c = leafCells(pm / leafScale + vSeed * 17.0);
+      cellId = c.yzw;
       float cut = mix(1.1, 0.8, edge) * (1.0 - 0.38 * uOpen[vSpecies]);
       if (c.x > mix(9.0, cut, sFine)) discard;
       vec3 leafN = vec3(hash13(c.yzw + 5.1), hash13(c.yzw + 7.7), hash13(c.yzw + 9.9)) - 0.5;
@@ -214,7 +216,7 @@ void main() {
     // Flowers scattered through the crown: creosote yellow, tamarisk and desert willow pink.
     float bloom = uBloom[vSpecies];
     if (bloom > 0.0) {
-      float fl = step(1.0 - bloom * 0.45, hash13(floor(pm / 0.07) + vSeed));
+      float fl = step(1.0 - bloom * 0.45, hash13(cellId + vSeed));
       leafC = mix(leafC, uBloomColor[vSpecies], fl * (inner ? 0.2 : 0.85));
     }
     leafC = mix(leafC, uFallTint, clamp((fract(vSeed * 53.1) - 0.5) * 0.6, 0.0, 1.0) * float(vSpecies == 3 || vSpecies == 7));
