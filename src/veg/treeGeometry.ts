@@ -205,7 +205,54 @@ export function buildLeafy(form: LeafyForm, detail: 0 | 1 | 2, seed = 1): THREE.
     return b.build(crown);
   }
 
-  // Wash trees, town trees and tamarisk: trunk, limbs and a lumpy crown.
+  if (form === 'tree') {
+    // Town shade trees, cottonwoods, desert willows: a trunk that splits into
+    // scaffold limbs, each forking into twigs that carry leaf clumps, so the
+    // crown is an irregular cloud of clumps with branches showing between them.
+    const sides = detail === 0 ? 7 : 4;
+    const clumpGeo = new THREE.IcosahedronGeometry(1, detail === 0 ? 1 : 0);
+    const coreGeo = new THREE.IcosahedronGeometry(1, 0);
+    const lean = new THREE.Vector3((r() - 0.5) * 0.1, 0, (r() - 0.5) * 0.1);
+    const forkY = 0.26 + r() * 0.12;
+    const trunkTop = new THREE.Vector3(lean.x, forkY, lean.z);
+    limb(b, new THREE.Vector3(0, -0.1, 0), trunkTop, 0.07, 0.055, sides);
+    const clump = (c: THREE.Vector3, size: number) => {
+      const m = new THREE.Matrix4().compose(c, new THREE.Quaternion().setFromEuler(new THREE.Euler(r() * 3, r() * 3, r() * 3)), new THREE.Vector3(size, size * 0.75, size));
+      const k = r() * 10;
+      b.addMesh(clumpGeo, m, c, TREE_PART.LEAF, (p) => p.multiplyScalar(1 + 0.22 * Math.sin(p.x * 5 + k) * Math.sin(p.y * 4 + k * 1.3) * Math.sin(p.z * 6 - k)));
+      if (detail === 0) b.addMesh(coreGeo, new THREE.Matrix4().compose(c, new THREE.Quaternion(), new THREE.Vector3(size * 0.6, size * 0.45, size * 0.6)), c, TREE_PART.INNER);
+    };
+    const branch = (from: THREE.Vector3, dir: THREE.Vector3, len: number, rad: number, depth: number) => {
+      const to = from.clone().addScaledVector(dir, len);
+      to.y = Math.min(to.y, 0.95);
+      limb(b, from, to, rad, rad * 0.7, Math.max(3, sides - (3 - depth)));
+      if (depth === 0) {
+        clump(to, (detail === 0 ? 0.13 : 0.22) * (0.8 + 0.45 * r()));
+        if (detail === 0 && r() < 0.6) clump(from.clone().lerp(to, 0.55).add(new THREE.Vector3((r() - 0.5) * 0.08, 0.03, (r() - 0.5) * 0.08)), 0.1 * (0.8 + 0.4 * r()));
+        return;
+      }
+      const n = depth === 1 && detail > 0 ? 1 : 2 + (r() < 0.45 ? 1 : 0);
+      const az0 = Math.atan2(dir.z, dir.x);
+      for (let k = 0; k < n; k++) {
+        const az = az0 + (k / n - 0.5) * 1.9 + (r() - 0.5) * 0.7;
+        const spread = 0.55 + r() * 0.5;
+        // Lower limbs reach out, upper ones climb; the canopy ends up wider than tall.
+        const nd = new THREE.Vector3(Math.cos(az) * spread, 0.15 + r() * 0.5, Math.sin(az) * spread).normalize();
+        branch(to, nd, len * (0.62 + r() * 0.2), rad * 0.62, depth - 1);
+      }
+    };
+    const scaffolds = detail === 0 ? 4 + Math.floor(r() * 2) : 3;
+    for (let i = 0; i < scaffolds; i++) {
+      const az = (i / scaffolds) * Math.PI * 2 + r() * 0.9;
+      const out = 0.8 + r() * 0.35;
+      branch(trunkTop, new THREE.Vector3(Math.cos(az) * out, 0.45 + r() * 0.3, Math.sin(az) * out).normalize(), 0.24 + r() * 0.06, 0.045, detail === 0 ? 2 : 1);
+    }
+    // Leader up the middle fills the top of the crown.
+    branch(trunkTop, new THREE.Vector3((r() - 0.5) * 0.3, 1, (r() - 0.5) * 0.3).normalize(), 0.28, 0.04, detail === 0 ? 2 : 1);
+    return b.build(crown);
+  }
+
+  // Tamarisk: several stems, limbs and a lumpy, feathery crown.
   const multi = form === 'feathery' ? 3 : 1;
   for (let s = 0; s < multi; s++) {
     const a0 = (s / multi) * Math.PI * 2 + r();
