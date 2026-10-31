@@ -170,6 +170,11 @@ void main() {
   float shadow = shadowAt(vWorld + n * 0.3, 0.0012);
   float ao = mix(0.6, 1.0, clamp(vLocal.y * 3.0, 0.0, 1.0));
   vec3 col = shadeSurface(albedo, n, vWorld, ao, rough, shadow) + emit;
+  // Sodium floodlights over lit parking lots: pools of light on the asphalt and cars.
+  if ((kind > 4.5 && kind < 5.5) || kind > 7.5) {
+    float pool = 0.45 + 0.55 * smoothstep(0.25, 0.75, vnoise(vWorld.xz * 0.05));
+    col += albedo * vec3(1.0, 0.7, 0.4) * uNight * vWall.a * pool * (0.5 + 0.5 * max(n.y, 0.0)) * 1.1 * uInvExposure;
+  }
   col = applyAtmosphere(col, vWorld);
   outColor = vec4(col, 1.0);
 }
