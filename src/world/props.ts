@@ -32,7 +32,12 @@ function houseGeometry(): THREE.BufferGeometry {
   const slopes = new THREE.BufferGeometry();
   slopes.setAttribute('position', new THREE.Float32BufferAttribute(v.slice(0, 36), 3));
   slopes.computeVertexNormals();
-  return merge([withPart(walls, 0), withPart(gables, 0), withPart(slopes, 1)]);
+  // Front porch (+z): shed roof on three wooden posts over a low deck, and a chimney.
+  const porchRoof = new THREE.BoxGeometry(0.46, 0.02, 0.17).rotateX(0.18).translate(-0.12, 0.5, 0.58);
+  const deck = new THREE.BoxGeometry(0.46, 0.035, 0.16).translate(-0.12, 0.08, 0.58);
+  const posts = [-0.33, -0.12, 0.09].map((x) => new THREE.BoxGeometry(0.012, 0.42, 0.018).translate(x, 0.29, 0.655));
+  const chimney = new THREE.BoxGeometry(0.06, 0.4, 0.07).translate(0.3, 0.78, -0.18);
+  return merge([withPart(walls, 0), withPart(gables, 0), withPart(chimney, 0), withPart(slopes, 1), withPart(porchRoof, 1), withPart(deck, 3), ...posts.map((p) => withPart(p, 3))]);
 }
 
 /** Unit metal shop building: tall walls, shallow ridged roof. */
@@ -65,14 +70,25 @@ function trailerGeometry(): THREE.BufferGeometry {
   const ends = new THREE.BufferGeometry();
   ends.setAttribute('position', new THREE.Float32BufferAttribute([-0.5, 0.8, -0.5, -0.5, 1, 0, -0.5, 0.8, 0.5, 0.5, 0.8, -0.5, 0.5, 0.8, 0.5, 0.5, 1, 0], 3));
   ends.computeVertexNormals();
-  return merge([withPart(walls, 0), withPart(ends, 0), withPart(roof, 1)]);
+  // Wooden entry deck with steps under a metal awning on the front (+z), swamp cooler on the roof.
+  const deck = new THREE.BoxGeometry(0.14, 0.04, 0.38).translate(-0.18, 0.16, 0.69);
+  const step = new THREE.BoxGeometry(0.08, 0.03, 0.14).translate(-0.18, 0.09, 0.95);
+  const awning = new THREE.BoxGeometry(0.3, 0.012, 0.5).rotateX(0.08).translate(-0.18, 0.66, 0.75);
+  const poles = [-0.32, -0.04].map((x) => new THREE.BoxGeometry(0.006, 0.5, 0.03).translate(x, 0.41, 0.98));
+  const cooler = new THREE.BoxGeometry(0.06, 0.16, 0.24).translate(0.22, 1.05, 0);
+  return merge([withPart(walls, 0), withPart(ends, 0), withPart(roof, 1), withPart(deck, 3), withPart(step, 3), withPart(awning, 2), withPart(cooler, 2), ...poles.map((p) => withPart(p, 2))]);
 }
 
 /** Flat-roofed block with a parapet: stucco homes and roadside businesses. */
 function flatGeometry(): THREE.BufferGeometry {
   const walls = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
   const deck = new THREE.PlaneGeometry(0.96, 0.96).rotateX(-Math.PI / 2).translate(0, 0.9, 0);
-  return merge([withPart(walls, 0), withPart(deck, 1)]);
+  // Pueblo-revival touches: viga beam ends along the front, a timber entry canopy, a swamp cooler.
+  const vigas = Array.from({ length: 9 }, (_, i) => new THREE.BoxGeometry(0.018, 0.045, 0.05).translate(-0.4 + i * 0.1, 0.8, 0.52));
+  const canopy = new THREE.BoxGeometry(0.22, 0.03, 0.12).translate(0.18, 0.6, 0.56);
+  const canopyPosts = [0.08, 0.28].map((x) => new THREE.BoxGeometry(0.015, 0.6, 0.02).translate(x, 0.3, 0.61));
+  const cooler = new THREE.BoxGeometry(0.1, 0.2, 0.1).translate(-0.2, 1.1, -0.1);
+  return merge([withPart(walls, 0), withPart(deck, 1), withPart(canopy, 3), withPart(cooler, 2), ...vigas.map((v) => withPart(v, 3)), ...canopyPosts.map((p) => withPart(p, 3))]);
 }
 
 /** Triangular lattice radio mast, unit height, unit base width. */
