@@ -608,6 +608,312 @@ kbd {
   margin-top: 12px;
 }
 
+/* ---------- Learn mode: easter-egg map and tour ---------- */
+.map-btn {
+  right: 114px;
+}
+body.touch .map-btn {
+  right: calc(max(14px, env(safe-area-inset-right)) + 96px);
+}
+.eggmap {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 6, 10, 0.55);
+  pointer-events: auto;
+  transition: opacity 0.35s ease;
+}
+.eggmap.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+.eggmap-panel {
+  width: min(1060px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 20px;
+  border-radius: 18px;
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.eggmap .k {
+  font: 500 10px/1 var(--sans);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.eggmap .t {
+  font: 400 24px/1.15 var(--display);
+  margin-top: 6px;
+}
+.eggmap-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.eggmap-head > div:first-child {
+  flex: 1;
+}
+.eggmap-count {
+  font: italic 400 14px/1 var(--serif);
+  color: var(--ink-dim);
+}
+.eggmap button {
+  font: 500 11px/1 var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+.eggmap button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.eggmap .eggmap-tour,
+.eggmap .go {
+  background: linear-gradient(135deg, #ffb27a, #ff8a4c);
+  color: #2a140a;
+  border-color: transparent;
+}
+.eggmap .eggmap-x {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 20px;
+  letter-spacing: 0;
+}
+.eggmap-body {
+  display: flex;
+  gap: 18px;
+  min-height: 0;
+}
+.eggmap-map {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(calc(100vh - 130px), 560px);
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.eggmap-map canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: auto;
+}
+.eggmap-pins {
+  position: absolute;
+  inset: 0;
+}
+.eggmap .pin {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  font: 600 10px/20px var(--sans);
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--ink);
+  background: rgba(20, 16, 22, 0.78);
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+.eggmap .pin.secret {
+  border-color: var(--neon);
+}
+.eggmap .pin.got {
+  background: var(--accent);
+  color: #2a140a;
+}
+.eggmap .pin.secret.got {
+  background: var(--neon);
+}
+.eggmap .pin.sel {
+  transform: scale(1.35);
+  z-index: 2;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25);
+}
+.eggmap-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: min(calc(100vh - 130px), 560px);
+}
+.eggmap-card {
+  flex: 0 1 auto;
+  overflow-y: auto;
+  padding: 4px 4px 4px 0;
+}
+.eggmap-list {
+  flex: 1;
+  min-height: 90px;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.eggmap .chip {
+  padding: 6px 10px;
+  font: 400 12px/1.2 var(--sans);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-dim);
+}
+.eggmap .chip b {
+  font-weight: 600;
+  color: var(--accent);
+  margin-right: 6px;
+}
+.eggmap .chip.secret b {
+  color: var(--neon);
+}
+.eggmap .chip.fish b {
+  color: var(--lake);
+}
+.eggmap .chip.got {
+  color: var(--ink);
+}
+.eggmap .chip.sel {
+  border-color: var(--accent);
+  background: rgba(255, 158, 90, 0.14);
+}
+.eggmap .pin.fish {
+  border-color: var(--lake);
+}
+.eggmap .pin.fish.got {
+  background: var(--lake);
+}
+.eggmap-card.secret .k {
+  color: var(--neon);
+}
+.eggmap-card .how {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  font: 400 13px/1.5 var(--sans);
+}
+.eggmap-card .how span {
+  display: block;
+  font: 500 9px/1 var(--sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.eggmap-card .x {
+  font: 300 13px/1.65 var(--sans);
+  color: var(--ink-dim);
+}
+.eggmap-card .row {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+@media (max-width: 760px), (max-height: 520px) {
+  .eggmap-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .eggmap-map {
+    width: 100%;
+    max-width: 420px;
+    align-self: center;
+  }
+  .eggmap-side {
+    max-height: none;
+  }
+}
+.tour {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  padding: 16px 22px 14px;
+  border-radius: 16px;
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 30;
+  pointer-events: auto;
+  transition: opacity 0.5s ease;
+}
+.tour.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+.tour .k {
+  font: 500 10px/1 var(--sans);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.tour.secret .k {
+  color: var(--neon);
+}
+.tour .t {
+  font: 400 24px/1.15 var(--display);
+  margin: 8px 0 6px;
+}
+.tour .x {
+  font: 300 13px/1.6 var(--sans);
+  color: var(--ink-dim);
+}
+.tour .how {
+  font: italic 400 13px/1.5 var(--serif);
+  color: var(--accent);
+  margin-top: 8px;
+}
+.tour .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.tour .row .bar {
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.tour .row .bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+}
+.tour button {
+  font: 500 10px/1 var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+
 /* ---------- Touch controls ---------- */
 .touch {
   position: fixed;
