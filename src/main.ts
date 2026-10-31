@@ -54,7 +54,9 @@ import { FISH } from './life/fishSpecies';
 import { Ghosts } from './life/ghosts';
 import { People } from './life/people';
 import { Discoveries } from './ui/discoveries';
-import { Lore } from './world/lore';
+import { Lore, type Egg } from './world/lore';
+import { EggMap } from './ui/eggMap';
+import { Tour } from './ui/tour';
 import { VolcanoVision } from './world/volcano';
 import { isTouch } from './ui/device';
 import { TouchControls } from './ui/touch';
@@ -228,16 +230,36 @@ async function boot() {
   const lore = new Lore(heightfield, journal, volcano, graveyard);
   journal.total = lore.ids.length + FISH.length + (ghosts ? 1 : 0);
   fish.onSpot = (s) => journal.discover({ id: 'fish-' + s.id, kind: 'fish', kicker: 'Fish spotted', title: s.name, text: s.note });
-  if (ghosts)
-    ghosts.onSight = () =>
-      journal.discover({
-        id: 'ghosts',
-        kind: 'secret',
-        kicker: 'Searchlight Cemetery · after dark',
-        title: 'The night shift',
-        text: 'Pale miners drift between the rock-ringed graves, carbide lamps swinging, and fade the moment you come close. Some say they are still looking for the Quartette vein.',
-      });
-  ui.append(menu.root, hud.root, hud.help, journal.root);
+  const ghostEgg = {
+    id: 'ghosts',
+    kind: 'secret' as const,
+    kicker: 'Searchlight Cemetery · after dark',
+    title: 'The night shift',
+    text: 'Pale miners drift between the rock-ringed graves, carbide lamps swinging, and fade the moment you come close. Some say they are still looking for the Quartette vein.',
+  };
+  if (ghosts) ghosts.onSight = () => journal.discover(ghostEgg);
+  const atlas = lore.atlas();
+  const lakeEgg = atlas.find((e) => e.id === 'lake-mohave')!;
+  const eggs: Egg[] = [
+    ...atlas,
+    ...(graveyard ? [{ ...ghostEgg, x: graveyard.cx, z: graveyard.cz, hint: 'Come back to the cemetery after dark and fly low among the graves.', r: 70, h: 18, night: true }] : []),
+    {
+      id: 'fish',
+      kind: 'fish',
+      kicker: 'Lake Mohave · fish',
+      title: `${FISH.length} species to spot`,
+      text: 'Striped bass, rainbow trout, bluegill, carp and the rare native razorback sucker and bonytail all live in the lake. Each one you see goes in your journal.',
+      x: lakeEgg.x - 250,
+      z: lakeEgg.z - 2900,
+      hint: 'Glide a few metres above the water, or dive right in, and the fish come into view.',
+      r: 80,
+      h: 14,
+    },
+  ];
+  const eggFound = (id: string) => (id === 'fish' ? journal.list().some((f) => f.startsWith('fish-')) : journal.has(id));
+  const tour = new Tour(eggs);
+  let eggMap: EggMap | null = null;
+  ui.append(menu.root, hud.root, hud.help, journal.root, tour.root);
   const touch = isTouch ? new TouchControls(controls) : null;
   if (touch) {
     document.body.classList.add('touch');
@@ -389,6 +411,11 @@ async function boot() {
     ui.append(fullBtn);
     document.body.classList.add('can-full');
   }
+  const mapBtn = document.createElement('button');
+  mapBtn.className = 'sound-btn map-btn';
+  mapBtn.title = 'Easter-egg map and learn tour (J)';
+  mapBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z" fill="none"/><path d="M9 4v14M15 6v14" fill="none"/></svg>';
+  ui.append(mapBtn);
   const wake = () => sound.start();
   addEventListener('pointerdown', wake);
   addEventListener('keydown', wake);
@@ -428,11 +455,84 @@ async function boot() {
     travel();
     setMode('fly');
   };
+  /** Drops the bird above an egg, facing it from the south. */
+  const flyTo = (e: Egg) => {
+    if (driving) setDriving(false);
+    const y = heightfield.height(e.x, e.z + e.r * 0.5);
+    player.flight.spawn(e.x, Math.max(y, heightfield.height(e.x, e.z)) + Math.max(40, e.h * 0.5), e.z + e.r * 0.5, 0);
+    chase.snapFrom(cam, player.object.position);
+  };
+  let tourNight = false;
+  let tourA = 0;
+  const showMap = (on: boolean) => {
+    if (on && !eggMap) {
+      const big = new Set(['motorway', 'trunk', 'primary', 'secondary']);
+      eggMap = new EggMap(eggs, {
+        height: (x, z) => heightfield.height(x, z),
+        water: (x, z) => water.sample(x, z).mask,
+        roads: world.osm.roads.filter((r) => big.has(r.kind)).map((r) => r.pts),
+      }, eggFound);
+      eggMap.onClose = () => showMap(false);
+      eggMap.onGo = (e) => {
+        showMap(false);
+        tour.stop();
+        flyTo(e);
+        setMode('fly');
+      };
+      eggMap.onTour = (i) => {
+        showMap(false);
+        startTour(i);
+      };
+      ui.append(eggMap.root);
+      void eggMap.root.offsetWidth;
+    }
+    eggMap?.show(on);
+    if (!on) canvas.focus();
+  };
+  mapBtn.onclick = (e) => {
+    e.stopPropagation();
+    showMap(!eggMap?.open);
+    mapBtn.blur();
+  };
+  const startTour = (i: number) => {
+    if (driving) setDriving(false);
+    drive.release();
+    menu.show(false);
+    hud.show(false);
+    touch?.show(false);
+    player.object.visible = false;
+    tour.start(i);
+  };
+  tour.onStop = (e) => {
+    tourA = Math.random() * Math.PI * 2;
+    if (e.night && G.uNight.value < 0.5) {
+      env.setPreset('night');
+      tourNight = true;
+    } else if (!e.night && tourNight) {
+      env.setPreset(settings.time);
+      tourNight = false;
+    }
+    // Park the bird under the camera so shadows and detail follow the tour.
+    player.flight.spawn(e.x, heightfield.height(e.x, e.z) + e.h * 0.5, e.z, 0);
+    if (e.id === 'highland-summit' && !volcano.active) volcano.start();
+  };
+  tour.onExit = () => {
+    if (tourNight) env.setPreset(settings.time);
+    tourNight = false;
+    flyTo(lastStop ?? eggs[0]);
+    setMode('fly');
+  };
+  let lastStop: Egg | null = null;
   if (params.has('drive')) setDriving(true);
   if (params.get('place')) goTo(params.get('place')!);
   setMode(mode);
+  if (params.has('learn')) startTour(0);
 
   addEventListener('keydown', (e) => {
+    if (eggMap?.open && (e.code === 'Escape' || e.code === 'KeyJ')) return showMap(false);
+    if (tour.key(e.code)) return e.preventDefault();
+    if (tour.active) return;
+    if (e.code === 'KeyJ' && !e.repeat) return showMap(true);
     if (e.code === 'Escape') setMode(mode === 'menu' ? 'fly' : 'menu');
     if (e.code === 'KeyK' && !e.repeat) toggleFull();
     if (mode !== 'fly') return;
@@ -599,6 +699,23 @@ async function boot() {
     cam.updateMatrixWorld();
   }
 
+  function tourCam(dt: number) {
+    const e = tour.egg!;
+    lastStop = e;
+    tourA += dt * (0.05 + 18 / Math.max(60, e.r * 4));
+    const wet = water.sample(e.x, e.z);
+    const gy = Math.max(heightfield.height(e.x, e.z), wet.mask > 0.3 ? wet.level : -Infinity);
+    const r = e.r;
+    cam.position.set(e.x + Math.sin(tourA) * r, 0, e.z + Math.cos(tourA) * r);
+    cam.position.y = Math.max(gy + e.h, heightfield.height(cam.position.x, cam.position.z) + 6);
+    cam.fov = 50;
+    cam.near = 0.25;
+    cam.updateProjectionMatrix();
+    cam.up.set(0, 1, 0);
+    cam.lookAt(e.x, gy + Math.min(e.h * 0.15, 30), e.z);
+    cam.updateMatrixWorld();
+  }
+
   const clock = new THREE.Clock();
   let lastMie = -1;
   const murky = () => G.uFogDensity.value > 0.003 || G.uRain.value + G.uSnowFall.value > 0.04;
@@ -636,6 +753,9 @@ async function boot() {
       cam.updateProjectionMatrix();
       cam.lookAt(b);
       cam.updateMatrixWorld();
+    } else if (tour.active) {
+      tour.update(dt);
+      if (tour.active) tourCam(dt);
     } else if (mode === 'menu') {
       controls.update(dt);
       if (driving) previewCar(dt);
@@ -701,7 +821,7 @@ async function boot() {
     ghosts?.update(dt, cam, G.uNight.value);
     people.update(dt, cam.position, G.uNight.value);
     volcano.update(dt, cam, window.innerHeight * engine.pixelRatio);
-    if (mode === 'fly' && !free) {
+    if (mode === 'fly' && !free && !tour.active) {
       const body = water.sample(actor.x, actor.z).mask > 0.3 ? water.bodyAt(actor.x, actor.z) : null;
       lore.update({
         pos: actor,
@@ -736,7 +856,7 @@ async function boot() {
   frame();
   loading.done();
   Object.assign(window, {
-    touch, engine, env, terrain, water, waterSurface, fish, ghosts, people, volcano, journal, lore, heightfield, G, player, chase, air, car, driveCam, roadIndex, fences, dust, drive, shadow, precip, cemeteries, cemeteryPlans, controls, menu, hud, places, trees, props, landmarks, laughlin, lights, traffic, wildlife, flocks, sound, power, grass, roads, motes,
+    touch, engine, env, terrain, water, waterSurface, fish, ghosts, people, volcano, journal, tour, showMap, eggs, lore, heightfield, G, player, chase, air, car, driveCam, roadIndex, fences, dust, drive, shadow, precip, cemeteries, cemeteryPlans, controls, menu, hud, places, trees, props, landmarks, laughlin, lights, traffic, wildlife, flocks, sound, power, grass, roads, motes,
     inspectView: (a: number, h: number) => ((inspectAngle = a), (inspectHeight = h)),
     /** Renders a frame and returns it as a JPEG data URL (debug capture). */
     snap: (w = 1100, x0 = 0, y0 = 0, cw = 1, ch = 1) => {
