@@ -44,6 +44,48 @@ const SITES = {
   davisDam: { x: 31600, z: 29600 },
 };
 
+/** An egg on the learn-mode map: where it is, how to find it, and how the tour frames it. */
+export interface Egg extends Discovery {
+  x: number;
+  z: number;
+  hint: string;
+  /** Tour camera orbit radius and height above the ground (m). */
+  r: number;
+  h: number;
+  night?: boolean;
+}
+
+type Guide = { at: { x: number; z: number }; hint: string; r: number; h: number; night?: boolean };
+
+const LAKE = { x: 23550, z: 1700 };
+
+const GUIDE: Record<string, Guide> = {
+  searchlight: { at: TOWN, hint: 'Fly or drive into town.', r: 420, h: 170 },
+  'duplex-mine': { at: SITES.duplexMine, hint: 'Fly low over the headframe on the hill behind Main Street.', r: 110, h: 35 },
+  'duplex-hill': { at: PEAKS.duplex, hint: 'Touch down on the summit of Duplex Hill, just west of town.', r: 260, h: 90 },
+  terribles: { at: SITES.terribles, hint: 'Drop below 40 m over the roadhouse at the north end of town.', r: 95, h: 28 },
+  mcdonalds: { at: SITES.mcdonalds, hint: 'Visit the arches on US-95 after dark.', r: 85, h: 26, night: true },
+  'harry-reid': { at: { x: 420, z: -420 }, hint: 'Fly low over the houses on the edge of town, on the wing rather than in the truck.', r: 240, h: 60 },
+  cemetery: { at: { x: 0, z: 0 }, hint: 'Fly low over the cemetery east of town before nightfall.', r: 90, h: 28 },
+  'joshua-forest': { at: { x: -6000, z: -2000 }, hint: 'Skim the Joshua trees west of town along SR-164.', r: 160, h: 26 },
+  'walking-box': { at: SITES.walkingBox, hint: 'Find the ranch house out in the Piute Valley.', r: 260, h: 60 },
+  'lake-mohave': { at: LAKE, hint: 'Skim the surface of Lake Mohave.', r: 420, h: 70 },
+  laughlin: { at: { x: 31300, z: 34000 }, hint: 'Head down NV-163 to the river.', r: 950, h: 320, night: true },
+  riverside: { at: SITES.riverside, hint: 'Circle the red R of the Riverside.', r: 230, h: 80, night: true },
+  'colorado-belle': { at: SITES.belle, hint: 'Find the riverboat moored in its own moat.', r: 220, h: 70 },
+  'river-rick': { at: SITES.riverRick, hint: 'Say hello to the neon cowboy outside the Pioneer.', r: 120, h: 40, night: true },
+  'davis-dam': { at: SITES.davisDam, hint: 'Fly up the river from Laughlin to the dam.', r: 650, h: 220 },
+  'cottonwood-cove': { at: SITES.cove, hint: 'Follow Cottonwood Cove Road all the way down to the lake.', r: 520, h: 160 },
+  'spirit-mountain': { at: PEAKS.spirit, hint: 'Land on the summit of Spirit Mountain.', r: 650, h: 260 },
+  'christmas-tree-pass': { at: SITES.christmasTree, hint: 'Drive the dirt pass below Spirit Mountain.', r: 420, h: 120 },
+  'cal-nev-ari': { at: SITES.calNevAri, hint: 'Follow US-95 south to the town with a runway.', r: 750, h: 260 },
+  'highland-summit': { at: PEAKS.highland, hint: 'Land on the highest crag of the Highland Range. Every visit replays the eruption.', r: 600, h: 220 },
+  'vegas-glow': { at: TOWN, hint: 'Climb above 500 m on a clear night and look north.', r: 1600, h: 900, night: true },
+  underwater: { at: { x: 24000, z: 0 }, hint: 'Dive below the surface of Lake Mohave.', r: 40, h: 14 },
+  'truck-underwater': { at: SITES.cove, hint: 'Drive the truck off the beach at Cottonwood Cove and keep going.', r: 160, h: 40 },
+  'snow-joshuas': { at: { x: -3500, z: -1500 }, hint: 'Choose snow in the Sky menu and fly over the Joshua trees.', r: 220, h: 50 },
+};
+
 /**
  * Places and moments around Searchlight that tell a bit of its story when you
  * find them, plus the eruption vision from the top of the Highland Range.
@@ -263,6 +305,15 @@ export class Lore {
       },
     ];
     this.ids = this.spots.map((s) => s.id);
+    if (graveyard) GUIDE.cemetery.at = { x: graveyard.cx, z: graveyard.cz };
+  }
+
+  /** Every lore spot and secret with its map position and finding hint. */
+  atlas(): Egg[] {
+    return this.spots.map(({ test: _t, ...d }) => {
+      const g = GUIDE[d.id];
+      return { ...d, x: g.at.x, z: g.at.z, hint: g.hint, r: g.r, h: g.h, night: g.night };
+    });
   }
 
   private highlandSummit: (s: LoreState) => boolean;
