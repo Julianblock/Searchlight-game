@@ -4,6 +4,7 @@ import { landmarkFragment, landmarkVertex } from '../render/shaders/landmarkShad
 import type { ShadowMap } from '../render/shadows';
 import { Frame, FX, type Mat, SignBuilder, SolidBuilder, UP } from './builders';
 import type { Heightfield } from './heightfield';
+import type { Lot } from './props';
 import { buildSignAtlas, type SignRect } from './signAtlas';
 
 /** Storey height the facade shader's room grid assumes (m). */
@@ -57,6 +58,22 @@ export class Laughlin {
   /** River-mirrored facades: world x, z, y0, y1, then linear rgb and half-width. */
   readonly glows: number[] = [];
   private sites: Rect[] = [];
+  /**
+   * Surface lots traced from the aerial imagery (x0, z0, x1, z1): stall rows run
+   * north-south, parallel to Casino Drive.
+   */
+  readonly lots: Lot[] = [
+    [31560, 32760, 31640, 32910],
+    [31445, 33145, 31635, 33320],
+    [31262, 33345, 31345, 33480],
+    [31350, 33490, 31520, 33600],
+    [31300, 33754, 31525, 33937],
+    [31293, 33890, 31494, 34177],
+    [31018, 33909, 31250, 33982],
+    [31311, 34280, 31445, 34415],
+    [30922, 35544, 31049, 35655],
+    [30974, 35453, 31077, 35497],
+  ].map(([x0, z0, x1, z1]) => ({ x: (x0 + x1) / 2, z: (z0 + z1) / 2, ang: Math.PI / 2, w: z1 - z0, d: x1 - x0, fill: 0.8 }));
   private s = new SolidBuilder();
   private sg = new SignBuilder();
   private rects: Record<string, SignRect>;
