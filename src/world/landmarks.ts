@@ -26,6 +26,8 @@ export class Landmarks {
   readonly sites: Site[] = [];
   /** Customer parking in front of and beside the businesses. */
   readonly lots: Lot[] = [];
+  /** Little knots of people outside the doors. */
+  readonly spots: { x: number; z: number; r: number; n: number }[] = [];
   private solidMat: THREE.ShaderMaterial;
   private signMat: THREE.ShaderMaterial;
   private shadowMat: THREE.ShaderMaterial;
@@ -171,6 +173,11 @@ export class Landmarks {
   }
 
   /** Parking lot centred at local (cx, cz), stall rows along local x. */
+  private spot(fr: Frame, x: number, z: number, r: number, n: number) {
+    const c = fr.p(x, 0, z);
+    this.spots.push({ x: c.x, z: c.z, r, n });
+  }
+
   private lot(fr: Frame, cx: number, cz: number, w: number, d: number, fill = 0.6) {
     if (w < 6 || d < 6) return;
     const c = fr.p(cx, 0, cz);
@@ -303,6 +310,8 @@ export class Landmarks {
     for (const [lx, lz] of [[-22, 26], [6, 30], [24, 24], [-30, 8]]) this.lotLight(fr, lx, lz);
     this.lot(fr, -2, (zf + 5 + hwy.d - 12) / 2, 62, hwy.d - 12 - zf - 5, 0.55);
     this.lot(fr, -40, 0, 14, 34, 0.6);
+    this.spot(fr, -9, zf + 7, 2.2, 4);
+    this.spot(fr, dx - 4, dzf + 3.5, 1.8, 3);
     this.lot(fr, 35, -2, 18, 26, 0.5);
     this.light(fr.p(dx, 3.3, dzf + 1.5), 1, 0.8, 0.5, 4);
     this.light(fr.p(-18, 3.8, zf + 1.5), 1, 0.8, 0.5, 3);
@@ -397,6 +406,7 @@ export class Landmarks {
     for (const sx of [-1, 1]) this.sign(fr, 'mcdTower', -3 + sx * (tw / 2 + 0.02), th - 2.3, tz, 2.9, 1.2, FX.NONE, sx * Math.PI / 2);
     this.storefront(fr, 3.5, D / 2 + 0.06, 8, 2.6, 0.9);
     this.lot(fr, 1, D / 2 + 10, 26, 12, 0.5);
+    this.spot(fr, 3.5, D / 2 + 2.5, 1.6, 3);
     // Drive-thru menu board.
     this.box(fr, W / 2 + 4, -0.5, -2, 0.4, 2.6, 2.4, '#2a2a2a');
     this.box(fr, W / 2 + 4.21, 0.4, -2, 0.02, 1.6, 2.1, '#ffe8b0', { glow: 0.8 });
