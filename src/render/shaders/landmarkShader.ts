@@ -10,8 +10,9 @@ export const landmarkVertex = /* glsl */ `
 uniform vec3 uCamPos;
 in vec3 color;
 // roughness, emission, effect, seed. Effects: 0 none, 1 neon flicker, 2 bulb chase, 3 metal,
-// 4 punched hotel windows, 5 glass curtain wall, 6 balconies, 7 floodlit wall. On the facade
-// effects, emission is a night-time floodlight wash whose hue is fract(seed) (negative: warm white).
+// 4 punched hotel windows, 5 glass curtain wall, 6 balconies, 7 floodlit wall, 8 blinking sign
+// (cycles its frames quickly). On the facade effects 4-7, emission is a night-time floodlight
+// wash whose hue is fract(seed) (negative: warm white).
 in vec4 aMat;
 #ifdef USE_MAP
 // uv (built in): 0..1 across the sign face
@@ -86,7 +87,7 @@ void main() {
   // Message boards and neon signs cycle through stacked frames.
   float frame = 0.0;
   if (vFrames > 1.5) {
-    float rate = fx > 0.5 && fx < 1.5 ? 0.0 : 1.0 / 4.0;
+    float rate = fx > 0.5 && fx < 1.5 ? 0.0 : fx > 7.5 ? 1.6 : 1.0 / 4.0;
     frame = rate > 0.0
       ? mod(floor(uTime * rate + vMat.w * 7.0), vFrames)
       // Neon tube buzzing on and off at random.
@@ -98,7 +99,7 @@ void main() {
   albedo = tex.rgb;
 #endif
   vec3 emit = vec3(0.0);
-  if (fx > 3.5) {
+  if (fx > 3.5 && fx < 7.5) {
     vec3 wash = vMat.w < 0.0 ? vec3(1.0, 0.86, 0.7) : clamp(abs(mod(fract(vMat.w) * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0) * 0.8 + 0.2;
     float wall = 1.0;
     // Floodlights at the foot of the wall throw overlapping cones up the face.
@@ -157,7 +158,9 @@ void main() {
       on = 0.35 + 0.65 * step(0.5, k);
     }
     // Lit signs are readable by day and blaze at night.
-    emit = albedo * albedo * glow * on * mix(0.08, 0.6, uNight) * uInvExposure;
+    // Neon, marquee bulbs and blinking signs burn hotter than backlit panels after dark.
+    float tube = (fx > 0.5 && fx < 2.5) || fx > 7.5 ? 2.2 : 1.0;
+    emit = albedo * albedo * glow * on * mix(0.08, 0.6 * tube, uNight) * uInvExposure;
     albedo *= 0.8;
   }
   if (fx > 2.5 && fx < 3.5) rough = 0.3;
