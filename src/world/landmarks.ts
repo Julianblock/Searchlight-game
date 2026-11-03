@@ -52,8 +52,7 @@ export class Landmarks {
     };
 
     this.terribles(...(site("Terrible's Roadhouse Searchlight", [-25.5, -81.5]) as [number, number]));
-    this.terriblesStore(...(site('Terrible Herbst', [89.3, 461.6]) as [number, number]));
-    this.mcdonalds(...(site("McDonald's", [118.9, 476]) as [number, number]));
+    this.terriblesCasino(...(site('Terrible Herbst', [89.3, 461.6]) as [number, number]));
     this.chevron(...(site('Chevron', [114.1, 514.6]) as [number, number]));
     this.diesel(...(site("Terrible's Diesel", [145.6, 548.5]) as [number, number]));
     this.rebel(...(site('Rebel', [63.8, 385.3]) as [number, number]));
@@ -151,7 +150,7 @@ export class Landmarks {
    * Highway pylon: poles beside the road carrying stacked double-sided panels
    * turned broadside to traffic. Returns the frame of the pylon.
    */
-  private pylon(hwy: { px: number; pz: number; tx: number; tz: number }, side: THREE.Vector3, setback: number, poles: number, panels: { name: string; h: number; y: number; glow?: number; fx?: number }[], poleColor = '#5a5a5c') {
+  private pylon(hwy: { px: number; pz: number; tx: number; tz: number }, side: THREE.Vector3, setback: number, poles: number, panels: { name: string; h: number; y: number; glow?: number; fx?: number; bare?: boolean }[], poleColor = '#5a5a5c') {
     const x = hwy.px + side.x * setback;
     const z = hwy.pz + side.z * setback;
     // Panel faces point along the road so both directions of traffic read them.
@@ -165,7 +164,7 @@ export class Landmarks {
     }
     for (const p of panels) {
       const w = p.h * this.rects[p.name].aspect;
-      this.box(fr, 0, p.y - p.h / 2 - 0.15, 0, w + 0.3, p.h + 0.3, 0.5, '#2a2a2c', { rough: 0.6 });
+      if (!p.bare) this.box(fr, 0, p.y - p.h / 2 - 0.15, 0, w + 0.3, p.h + 0.3, 0.5, '#2a2a2c', { rough: 0.6 });
       this.sg.quad(fr.p(0, p.y, 0.25), fr.r, UP, w, p.h, this.rects[p.name], p.glow ?? 1, p.fx ?? FX.NONE, this.seed, false);
       this.sg.quad(fr.p(0, p.y, -0.25), fr.r.clone().negate(), UP, w, p.h, this.rects[p.name], p.glow ?? 1, p.fx ?? FX.NONE, this.seed + 0.5, false);
     }
@@ -375,45 +374,174 @@ export class Landmarks {
     for (let i = 0; i < 12; i++) this.s.add(sp, wm.clone().multiply(new THREE.Matrix4().makeRotationZ((i / 12) * Math.PI * 2)), wood, { rough: 0.9 }, this.seed);
   }
 
-  private terriblesStore(x: number, z: number) {
+  /**
+   * Terrible's Casino, the truck-stop strip it shares with McDonald's: the
+   * LIQUOR tower, the casino arcade under the cowboy's arched gable, the
+   * CLEAN RESTROOMS tower with the golden M, the McDonald's wing and a blue
+   * tin shed. It faces south over the lot, toward the diesel canopy.
+   */
+  private terriblesCasino(x: number, z: number) {
     this.seed = 2;
-    const { fr } = this.frameFacing(x, z, 30);
-    const W = 38, D = 18, H = 5.6;
-    this.box(fr, 0, -1.5, 0, W, H + 1.5, D, '#e2d6be');
-    this.box(fr, 0, H - 1.6, D / 2 - 0.4, W + 0.6, 2, 1.4, '#ffc61a', { rough: 0.5 });
-    this.box(fr, 0, H + 0.4, D / 2 - 0.4, W + 0.6, 0.35, 1.4, '#b30f16');
-    this.sign(fr, 'terriblesStore', -4, H - 0.6, D / 2 + 0.31, 1.8, 1.1);
-    this.storefront(fr, 0, D / 2 + 0.06, W - 6, 2.8, 0.9);
-    // Ice chest and propane cage out front.
-    this.box(fr, 14, -0.3, D / 2 + 1, 2.4, 1.6, 0.9, '#e8f0f8', { glow: 0.2 });
-    this.box(fr, -15, -0.3, D / 2 + 1, 2, 1.8, 1, '#c8ccd0', { fx: FX.METAL });
-    for (const [lx, lz] of [[-18, 20], [18, 20]]) this.lotLight(fr, lx, lz);
+    const a = -2.79;
+    const fr = new Frame(x, this.hf.height(x, z), z, Math.sin(a), -Math.cos(a));
+    for (const sx of [-16, 16]) {
+      const c = fr.p(sx, 0, 0);
+      this.sites.push({ x: c.x, z: c.z, radius: 19 });
+    }
+    const STUCCO = '#e6d7b8', TRIM = '#cdb48e', COPING = '#a4b0a2', TILE = '#8a5c40';
+    const D = 26.8, zf = D / 2;
+    const tint = (seed: number, f: () => void) => {
+      const s0 = this.seed;
+      this.seed = seed;
+      f();
+      this.seed = s0;
+    };
+    const cap = (cx: number, y: number, cz: number, w: number, d: number) => {
+      this.box(fr, cx, y, cz, w + 0.4, 0.3, d + 0.4, TRIM);
+      this.box(fr, cx, y + 0.3, cz, w + 0.2, 0.18, d + 0.2, COPING, { rough: 0.5 });
+    };
+    const hip = (cx: number, y: number, cz: number, w: number, d: number, h: number, color = TILE) => {
+      const g = new THREE.ConeGeometry(1, 1, 4, 1).rotateY(Math.PI / 4).scale(w / Math.SQRT2, h, d / Math.SQRT2).translate(0, h / 2, 0);
+      this.s.add(g, fr.at(cx, y, cz), color, { rough: 0.75 }, this.seed);
+    };
+    const bulbs: THREE.Vector3[] = [];
+    const bulbRun = (x0: number, x1: number, y: number, bz: number) => {
+      for (let bx = x0; bx <= x1 + 0.01; bx += 0.55) bulbs.push(fr.p(bx, y, bz));
+    };
+
+    // Body of the strip: one long flat-roofed stucco block.
+    this.box(fr, 0, -1.5, 0, 59, 6.5, D, STUCCO);
+    for (const [ux, uz] of [[-20, -6], [-4, -4], [8, -7], [21, -3]]) this.box(fr, ux, 5, uz, 2.8, 1.3, 2.2, '#b8b6ae', { fx: FX.METAL });
+
+    // LIQUOR: a hip-roofed tower at the west end, red-washed after dark, then the ICE bay.
+    this.box(fr, -24, 4.6, zf - 0.2, 11.2, 1.4, 0.6, STUCCO);
+    cap(-24, 6, zf - 0.2, 11.2, 0.6);
+    this.box(fr, -24, -1.5, zf + 0.3, 6.4, 8.9, 3.2, STUCCO);
+    tint(0, () => this.box(fr, -24, 0, zf + 1.92, 6.0, 7.2, 0.06, STUCCO, { fx: FX.WASH, glow: 2.2 }));
+    cap(-24, 7.4, zf + 0.3, 6.4, 3.2);
+    hip(-24, 7.9, zf + 0.3, 7.6, 4.4, 2);
+    this.sign(fr, 'tcLiquor', -24, 6.1, zf + 1.98, 1.1, 3, FX.NEON);
+    this.storefront(fr, -24, zf + 1.95, 3.6, 2.6, 0.7);
+    tint(0, () => this.box(fr, -17.6, 0, zf + 0.02, 3.4, 5.4, 0.06, STUCCO, { fx: FX.WASH, glow: 1.8 }));
+    this.sign(fr, 'tcIce', -17.6, 4.4, zf + 0.08, 0.9, 3, FX.NEON);
+    this.palm(fr, -28, zf + 3, 9);
+    this.palm(fr, -20.5, zf + 3.4, 7.5);
+    bulbRun(-27.2, -20.8, 7.75, zf + 1.95);
+
+    // Casino arcade: a deep signboard on stacked-stone columns over four pairs of glass doors.
+    const cx = -6, cw = 20, hz = zf + 2.2;
+    this.box(fr, cx, 3.4, hz, cw, 3.4, 1.2, STUCCO);
+    this.box(fr, cx, 3.25, zf + 1.2, cw, 0.18, 2.8, '#d9cbae');
+    cap(cx, 6.8, hz, cw, 1.2);
+    for (const sx of [-1, 1]) {
+      this.box(fr, cx + sx * (cw / 2 + 0.6), -1.5, zf + 0.6, 1.6, 8.6, 1.6, STUCCO);
+      cap(cx + sx * (cw / 2 + 0.6), 7.1, zf + 0.6, 1.6, 1.6);
+    }
+    bulbRun(cx - cw / 2, cx + cw / 2, 7.35, hz + 0.75);
+    // The arched gable with its moulded edge and a ball finial.
+    const R = 6, yc = -1.8, ha = Math.atan2(0.6 - yc, 5.5);
+    const arch = (r: number) => {
+      const sh = new THREE.Shape();
+      const ex = Math.sqrt(r * r - (0.6 - yc) ** 2);
+      sh.moveTo(-ex, 0);
+      sh.lineTo(ex, 0);
+      sh.lineTo(ex, 0.6);
+      sh.absarc(0, yc, r, Math.atan2(0.6 - yc, ex), Math.PI - Math.atan2(0.6 - yc, ex), false);
+      sh.lineTo(-ex, 0);
+      return sh;
+    };
+    const gy = 7.0;
+    this.s.add(new THREE.ExtrudeGeometry(arch(R), { depth: 0.8, bevelEnabled: false }), fr.at(cx, gy, hz - 0.2), STUCCO, { rough: 0.8 }, this.seed);
+    const ring = new THREE.Shape();
+    ring.absarc(0, yc, R + 0.38, ha - 0.02, Math.PI - ha + 0.02, false);
+    ring.absarc(0, yc, R, Math.PI - ha, ha, true);
+    this.s.add(new THREE.ExtrudeGeometry(ring, { depth: 0.5, bevelEnabled: false }), fr.at(cx, gy, hz + 0.3), COPING, { rough: 0.5 }, this.seed);
+    this.s.add(new THREE.SphereGeometry(0.42, 10, 8), fr.at(cx, gy + yc + R + 0.75, hz + 0.3), TRIM, { rough: 0.6 }, this.seed);
+    for (let t = ha + 0.05; t < Math.PI - ha - 0.03; t += 0.085) bulbs.push(fr.p(cx + Math.cos(t) * (R + 0.2), gy + yc + Math.sin(t) * (R + 0.2), hz + 0.85));
+    this.sign(fr, 'tcCowboy', cx, gy + 1.85, hz + 0.65, 3.9, 1.1, FX.BLINK);
+    this.sign(fr, 'tcTerribles', cx - 5.2, 5.1, hz + 0.65, 1.75, 3.2, FX.NEON);
+    this.sign(fr, 'tcCasino', cx + 4.3, 5.1, hz + 0.65, 2.05, 2.6, FX.CHASE);
+    tint(-1, () => this.box(fr, cx, 3.45, hz + 0.61, cw, 3.3, 0.02, STUCCO, { fx: FX.WASH, glow: 1.4 }));
+    for (const px of [-15.2, -9.3, -2.7, 3.2]) {
+      // Stacked stone: courses of mixed tans and browns.
+      for (let k = 0; k < 20; k++) {
+        const c = ['#9c8268', '#927a62', '#a68c70', '#8c735c', '#a08468'][(k * 7 + Math.round(px)) % 5];
+        this.box(fr, px + (((k * 37) % 5) - 2) * 0.012, -0.4 + k * 0.18, hz, 1.15, 0.185, 1.15, c, { rough: 1 });
+      }
+      this.box(fr, px, 3.0, hz, 1.5, 0.45, 1.5, STUCCO);
+    }
+    this.storefront(fr, cx, zf + 0.06, cw - 2, 2.7, 0.75);
+    for (const bx of [-12.5, 0.4]) this.cyl(fr, bx, -0.2, zf + 0.9, 0.36, 0.36, 1.05, '#7a5232', { rough: 0.9 }, 10);
+    this.light(fr.p(cx, 3.1, zf + 1.5), 1, 0.8, 0.55, 4);
+
+    // CLEAN RESTROOMS and the tile-capped tower with the golden M.
+    this.box(fr, 6.2, 4.6, zf - 0.1, 4.6, 1.4, 0.6, STUCCO);
+    cap(6.2, 6, zf - 0.1, 4.6, 0.6);
+    this.sign(fr, 'tcRestrooms', 6.2, 4.3, zf + 0.25, 1.15, 3, FX.NEON);
+    this.storefront(fr, 6.2, zf + 0.06, 4, 2.6, 0.8);
+    const tx = 10.9, tw = 5.6;
+    this.box(fr, tx, -1.5, zf - tw / 2 + 0.6, tw, 11.4, tw, STUCCO);
+    cap(tx, 9.9, zf - tw / 2 + 0.6, tw, tw);
+    hip(tx, 10.4, zf - tw / 2 + 0.6, tw + 1.2, tw + 1.2, 2.3);
+    this.sign(fr, 'mcdM', tx, 8.4, zf + 0.64, 1.7, 1.4);
+    this.sign(fr, 'tcTerrBox', tx, 6.6, zf + 0.64, 1.05, 1.3);
+    this.sign(fr, 'tcTerrBox', tx - tw / 2 - 0.04, 6.6, zf - tw / 2 + 0.6, 1.05, 1.3, FX.NONE, -Math.PI / 2);
+    this.storefront(fr, tx, zf + 0.66, 3.2, 2.6, 0.85);
+    bulbRun(tx - tw / 2, tx + tw / 2, 10.3, zf + 0.85);
+
+    // McDonald's: grey metal fascia, white letters, a wall of glass, a beige end tower with another M.
+    const mx = 20.6, mw = 15.6;
+    this.box(fr, mx, 4.4, zf + 0.15, mw, 1.7, 0.4, '#b4b9bd', { rough: 0.4, fx: FX.METAL });
+    this.box(fr, mx, 6.1, zf + 0.15, mw + 0.2, 0.15, 0.5, '#8d9296', { fx: FX.METAL });
+    this.sign(fr, 'mcdWord', mx - 1.2, 5.25, zf + 0.38, 1.0, 1.4);
+    this.storefront(fr, mx - 1, zf + 0.06, mw - 4, 2.9, 0.95);
+    for (let i = 0; i < 3; i++) this.box(fr, mx - 2 + i * 1.6, -0.3, zf + 0.9, 1.4, 1.6, 0.9, '#f2f2f0', { rough: 0.5 });
+    this.box(fr, 28, -1.5, zf - 1, 3.2, 9.4, 2.8, '#d8c39e');
+    cap(28, 7.9, zf - 1, 3.2, 2.8);
+    this.sign(fr, 'mcdM', 28, 6.5, zf + 0.42, 1.3, 1.4);
+
+    // Blue corrugated tin shed off the east end.
+    this.box(fr, 33.5, -1.5, -2, 8, 6.4, 12, '#7f9bb4', { rough: 0.45, fx: FX.METAL });
+    const shed = new THREE.CylinderGeometry(1, 1, 1, 3).rotateX(-Math.PI / 2).translate(0, 0.5, 0).scale(8.4 / 1.732, 1.8 / 1.5, 12.4);
+    this.s.add(shed, fr.at(33.5, 4.9, -2), '#6f8aa2', { rough: 0.45, fx: FX.METAL }, this.seed);
+
+    // Flagpole on the island in front, Old Glory at the top.
+    const fx0 = 4.6, fz0 = zf + 8;
+    this.cyl(fr, fx0, -1, fz0, 0.2, 0.09, 25.5, '#f0f0ee', { rough: 0.3, fx: FX.METAL }, 10);
+    this.s.add(new THREE.SphereGeometry(0.22, 8, 6), fr.at(fx0, 24.6, fz0), '#d8b040', { rough: 0.3, fx: FX.METAL }, this.seed);
+    const flag = this.rects.usFlag;
+    this.sg.quad(fr.p(fx0 + 2.35, 22.8, fz0), fr.dir(0.25), UP, 4.6, 2.4, flag, 0, FX.NONE, this.seed, true);
+
+    for (const b of bulbs) {
+      this.s.add(new THREE.SphereGeometry(0.06, 5, 4), new THREE.Matrix4().makeTranslation(b.x, b.y, b.z), '#ffe7a8', { glow: 2.2, fx: FX.CHASE }, this.seed);
+    }
+    for (let i = 0; i < bulbs.length; i += 9) this.light(bulbs[i], 1, 0.82, 0.5, 0.9);
+    this.light(fr.p(cx, gy + 2, hz + 1.5), 1, 0.3, 0.2, 6);
+    this.light(fr.p(-24, 5.5, zf + 2.5), 1, 0.15, 0.1, 5);
+
+    // Parking along the frontage, people at the doors, lot lights.
+    this.lot(fr, -3, zf + 13.5, 52, 13, 0.6);
+    this.spot(fr, cx, zf + 4, 2.2, 4);
+    this.spot(fr, 6.2, zf + 2.6, 1.4, 2);
+    this.spot(fr, mx - 3, zf + 2.6, 1.6, 3);
+    for (const [lx, lz] of [[-22, zf + 22], [8, zf + 22], [30, zf + 14]]) this.lotLight(fr, lx, lz);
+    this.terriblesPylon(fr.p(-29, 0, zf + 16));
   }
 
-  private mcdonalds(x: number, z: number) {
-    this.seed = 3;
-    const { fr, hwy } = this.frameFacing(x, z, 14);
-    const W = 17, D = 13, H = 4.6;
-    this.box(fr, 0, -1.5, 0, W, H + 1.5, D, '#c9bba6');
-    this.box(fr, 0, H - 0.4, 0, W + 0.6, 1.2, D + 0.6, '#3c3a38', { rough: 0.6 });
-    // Entry tower: tan stucco, white cornice, dark hipped cap, red panel with the arches.
-    const tw = 4.6, th = 8.2, tz = D / 2 - 1.5;
-    this.box(fr, -3, -1.5, tz, tw, th + 1.5, tw, '#cdb898');
-    this.box(fr, -3, th - 0.1, tz, tw + 0.5, 0.45, tw + 0.5, '#f0ece4');
-    const cap = new THREE.ConeGeometry(1, 1, 4, 1).rotateY(Math.PI / 4).scale((tw + 0.9) / Math.SQRT2, 2, (tw + 0.9) / Math.SQRT2).translate(0, 1, 0);
-    this.s.add(cap, fr.at(-3, th + 0.35, tz), '#4c4440', { rough: 0.7 }, this.seed);
-    this.sign(fr, 'mcdTower', -3, th - 2.3, tz + tw / 2 + 0.02, 2.9, 1.2);
-    for (const sx of [-1, 1]) this.sign(fr, 'mcdTower', -3 + sx * (tw / 2 + 0.02), th - 2.3, tz, 2.9, 1.2, FX.NONE, sx * Math.PI / 2);
-    this.storefront(fr, 3.5, D / 2 + 0.06, 8, 2.6, 0.9);
-    this.lot(fr, 1, D / 2 + 10, 26, 12, 0.5);
-    this.spot(fr, 3.5, D / 2 + 2.5, 1.6, 3);
-    // Drive-thru menu board.
-    this.box(fr, W / 2 + 4, -0.5, -2, 0.4, 2.6, 2.4, '#2a2a2a');
-    this.box(fr, W / 2 + 4.21, 0.4, -2, 0.02, 1.6, 2.1, '#ffe8b0', { glow: 0.8 });
-    // The tall highway pole sign, visible for miles down US-95.
-    const side = new THREE.Vector3(x - hwy.px, 0, z - hwy.pz).normalize();
-    const py = this.pylon(hwy, side, 14, 1, [{ name: 'mcdonalds', h: 6, y: 25, glow: 1.5 }], '#d8d8d8');
-    this.light(py.p(0, 25, 0), 1, 0.7, 0.08, 9);
+  /** The big pole sign out on US-95: McDonald's arches over ONE9, Terrible's Diesel, the price and the casino panel. */
+  private terriblesPylon(near: THREE.Vector3) {
+    const hwy = this.nearestHighway(near.x, near.z);
+    const side = new THREE.Vector3(near.x - hwy.px, 0, near.z - hwy.pz).normalize();
+    const py = this.pylon(hwy, side, 12, 2, [
+      { name: 'pyCasino', h: 4.4, y: 7.6, glow: 1.3 },
+      { name: 'pyRest', h: 0.77, y: 10.35, glow: 1.3 },
+      { name: 'pyPrice', h: 1.4, y: 11.6, glow: 1.5 },
+      { name: 'pyDiesel', h: 2.2, y: 13.6, glow: 1.3 },
+      { name: 'pyOne9', h: 2.4, y: 16.1, glow: 1.3 },
+      { name: 'pyArches', h: 3.1, y: 19.2, glow: 1.6, bare: true },
+    ], '#3a3a3c');
+    this.light(py.p(0, 19.6, 0), 1, 0.75, 0.15, 9);
+    this.light(py.p(0, 9, 0), 1, 0.85, 0.3, 6);
   }
 
   private chevron(x: number, z: number) {
