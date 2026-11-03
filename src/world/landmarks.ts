@@ -562,12 +562,53 @@ export class Landmarks {
 
   private diesel(x: number, z: number) {
     this.seed = 5;
-    const { fr, hwy } = this.frameFacing(x, z, 16);
-    // Tall truck canopy.
+    const { fr } = this.frameFacing(x, z, 16);
+    // Tall truck canopy, ONE9 panels at each end of the fascia.
     this.canopy(fr, 0, 0, 22, 11, 6.6, 'canopyTerribles', '#b30f16');
-    const side = new THREE.Vector3(x - hwy.px, 0, z - hwy.pz).normalize();
-    const py = this.pylon(hwy, side, 18, 2, [{ name: 'terriblesDiesel', h: 3.6, y: 13, glow: 1.3 }], '#a8141a');
-    this.light(py.p(0, 13, 0), 1, 0.6, 0.1, 6);
+    for (const sx of [-1, 1]) this.sign(fr, 'pyOne9', sx * 7.5, 7.25, 5.56, 1.15, 1.3);
+    // Rigs: a couple fuelling, a row parked diagonally behind for the night.
+    const PAINTS = ['#f4f4f2', '#1d3f8a', '#b8141a', '#1a1a1c', '#6a6e72', '#2e5a32', '#d8a020'];
+    const TRAILERS = ['#f2f2ee', '#e8e8e4', '#c8ccd0', '#f2f2ee', '#8a1a1a'];
+    this.semi(fr, 0, 1, 0, PAINTS[1], TRAILERS[0]);
+    this.semi(fr, 12.8, -2, Math.PI, PAINTS[3], TRAILERS[2]);
+    for (let i = 0; i < 9; i++) {
+      if (i === 4) continue;
+      this.semi(fr, -26 + i * 6.2, -30, Math.PI + 0.45, PAINTS[(i * 3) % PAINTS.length], TRAILERS[(i * 2) % TRAILERS.length]);
+    }
+    this.spot(fr, 0, 3, 3, 2);
+  }
+
+  /** Tractor-trailer pointing along local +z at (x, z): long-nose cab, sleeper, a 53-foot box with marker lights. */
+  private semi(fr: Frame, x: number, z: number, yaw: number, cab: string, trailer: string) {
+    const at = (lx: number, ly: number, lz: number) => fr.at(x, ly, z, yaw).multiply(new THREE.Matrix4().makeTranslation(lx, 0, lz));
+    const part = (lx: number, ly: number, lz: number, w: number, h: number, d: number, color: string, mat: Mat = {}) =>
+      this.s.add(new THREE.BoxGeometry(w, h, d).translate(0, h / 2, 0), at(lx, ly, lz), color, mat, this.seed);
+    const wheel = new THREE.CylinderGeometry(0.52, 0.52, 0.32, 10).rotateZ(Math.PI / 2);
+    // Trailer and its tandem axles.
+    part(0, 1.25, -7, 2.6, 2.85, 16, trailer, { rough: 0.5 });
+    part(0, 0.9, -13.5, 2.4, 0.35, 2.6, '#2a2a2a');
+    for (const az of [-12.9, -14.2, 1.2, 2.5, 6.3]) {
+      for (const sx of [-1, 1]) this.s.add(wheel, at(sx * 1.05, 0.52, az), '#1a1a1a', { rough: 0.9 }, this.seed);
+    }
+    part(0, 0.75, 1.6, 2.2, 0.35, 5.6, '#2a2a2a');
+    // Sleeper, cab, long hood, chrome grille, stacks and tanks.
+    part(0, 1.3, 2.5, 2.5, 2.6, 2.2, cab, { rough: 0.35 });
+    part(0, 1.3, 4.3, 2.45, 2.1, 1.5, cab, { rough: 0.35 });
+    part(0, 2.4, 5.08, 2.3, 0.9, 0.06, '#2a3440', { rough: 0.1 });
+    part(0, 1.1, 6.2, 2.1, 1.25, 2.4, cab, { rough: 0.35 });
+    part(0, 1.15, 7.42, 1.3, 1.05, 0.06, '#c8ccd0', { rough: 0.2, fx: FX.METAL });
+    part(0, 0.65, 7.5, 2.4, 0.3, 0.3, '#c8ccd0', { rough: 0.2, fx: FX.METAL });
+    for (const sx of [-1, 1]) {
+      this.s.add(new THREE.CylinderGeometry(0.09, 0.09, 2.6, 6), at(sx * 1.32, 3.1, 3.6), '#d0d4d8', { rough: 0.2, fx: FX.METAL }, this.seed);
+      this.s.add(new THREE.CylinderGeometry(0.33, 0.33, 1.3, 10).rotateX(Math.PI / 2), at(sx * 1.05, 0.95, 3.3), '#c8ccd0', { rough: 0.2, fx: FX.METAL }, this.seed);
+      part(sx * 0.85, 1.5, 7.46, 0.32, 0.18, 0.04, '#fff6e0', { glow: 0.6 });
+    }
+    // Amber clearance lamps along the trailer and the cab roof.
+    for (let k = 0; k < 5; k++) {
+      for (const sx of [-1, 1]) part(sx * 1.31, 3.95, -14.4 + k * 3.7, 0.04, 0.1, 0.16, '#ffa020', { glow: 2.2 });
+    }
+    for (let k = -2; k <= 2; k++) part(k * 0.4, 3.9, 4.9, 0.14, 0.08, 0.06, '#ffa020', { glow: 2.2 });
+    for (const sx of [-1, 1]) part(sx * 1.0, 1.0, -15.02, 0.25, 0.14, 0.04, '#ff2010', { glow: 1.6 });
   }
 
   private rebel(x: number, z: number) {
