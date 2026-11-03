@@ -37,25 +37,6 @@ function terriblesMark(g: CanvasRenderingContext2D, x: number, y: number, w: num
 
 const SIGNS: SignSpec[] = [
   {
-    name: 'terribles',
-    w: 640,
-    h: 300,
-    draw(g, w, h) {
-      const grd = g.createLinearGradient(0, 0, 0, h);
-      grd.addColorStop(0, '#ffd23a');
-      grd.addColorStop(1, '#ffb000');
-      g.fillStyle = '#b30f16';
-      rounded(g, 0, 0, w, h, 40);
-      g.fill();
-      g.fillStyle = grd;
-      rounded(g, 14, 14, w - 28, h - 28, 30);
-      g.fill();
-      terriblesMark(g, 20, 20, w - 40, h * 0.68);
-      g.fillStyle = '#b30f16';
-      fitText(g, 'ROADHOUSE  ·  CASINO', w / 2, h * 0.8, w * 0.8, (p) => `bold ${p}px ${SANS}`, h * 0.15);
-    },
-  },
-  {
     name: 'terriblesLED',
     w: 640,
     h: 200,
@@ -184,87 +165,6 @@ const SIGNS: SignSpec[] = [
       g.fillRect(10, 10, w - 20, h - 20);
       g.fillStyle = '#f6f2ea';
       fitText(g, 'CASINO', w / 2, h / 2, w * 0.8, (p) => `bold ${p}px ${SERIF}`, h * 0.6);
-    },
-  },
-  {
-    name: 'casino',
-    w: 512,
-    h: 128,
-    draw(g, w, h) {
-      g.fillStyle = '#2a0c0c';
-      g.fillRect(0, 0, w, h);
-      neon(g, 'CASINO', w / 2, h / 2, w * 0.9, (p) => `900 ${p}px ${BLACK}`, h * 0.72, '#ff3b2a');
-      // Chaser bulb border.
-      g.fillStyle = '#ffe9a8';
-      for (let x = 10; x < w; x += 22) {
-        g.beginPath(); g.arc(x, 8, 5, 0, 7); g.fill();
-        g.beginPath(); g.arc(x, h - 8, 5, 0, 7); g.fill();
-      }
-    },
-  },
-  {
-    name: 'dennys',
-    w: 512,
-    h: 240,
-    draw(g, w, h) {
-      g.fillStyle = '#ffd200';
-      rounded(g, 0, 0, w, h, h * 0.22);
-      g.fill();
-      g.fillStyle = '#e3001b';
-      rounded(g, 12, 12, w - 24, h * 0.66, h * 0.16);
-      g.fill();
-      g.save();
-      g.fillStyle = '#ffd200';
-      g.translate(w / 2, h * 0.38);
-      g.transform(1, 0, -0.12, 1, 0, 0);
-      fitText(g, "Denny's", 0, 0, w * 0.82, (p) => `italic bold ${p}px ${SCRIPT}`, h * 0.56);
-      g.restore();
-      g.fillStyle = '#e3001b';
-      fitText(g, 'OPEN 24 HOURS', w / 2, h * 0.85, w * 0.8, (p) => `bold ${p}px ${SANS}`, h * 0.16);
-    },
-  },
-  {
-    name: 'mcdonalds',
-    w: 400,
-    h: 400,
-    draw(g, w, h) {
-      g.fillStyle = '#da291c';
-      g.fillRect(0, 0, w, h);
-      // Golden arches: two parabolic humps.
-      g.strokeStyle = '#ffc72c';
-      g.lineWidth = w * 0.11;
-      g.lineCap = 'butt';
-      const base = h * 0.78;
-      const top = h * 0.16;
-      for (const cx of [w * 0.33, w * 0.67]) {
-        g.beginPath();
-        const half = w * 0.17;
-        g.moveTo(cx - half, base);
-        g.bezierCurveTo(cx - half, top - h * 0.05, cx + half, top - h * 0.05, cx + half, base);
-        g.stroke();
-      }
-      g.fillStyle = '#fff';
-      fitText(g, "McDonald's", w / 2, h * 0.9, w * 0.8, (p) => `bold ${p}px ${SANS}`, h * 0.11);
-    },
-  },
-  {
-    // Red tower panel with the golden arches.
-    name: 'mcdTower',
-    w: 320,
-    h: 320,
-    draw(g, w, h) {
-      g.fillStyle = '#d0201a';
-      g.fillRect(0, 0, w, h);
-      g.strokeStyle = '#ffc72c';
-      g.lineWidth = w * 0.075;
-      g.lineCap = 'butt';
-      for (const cx of [w * 0.35, w * 0.65]) {
-        const half = w * 0.15;
-        g.beginPath();
-        g.moveTo(cx - half, h * 0.84);
-        g.bezierCurveTo(cx - half, h * 0.02, cx + half, h * 0.02, cx + half, h * 0.84);
-        g.stroke();
-      }
     },
   },
   {
